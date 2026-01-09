@@ -1,5 +1,4 @@
 import NextAuth from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import pool from "@/lib/db";
@@ -14,63 +13,75 @@ async function getUserByEmail(email) {
   return res.rows[0] || null;
 }
 
-const authOptions = {
-  session: { strategy: "jwt" },
+export const authOptions = {
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET
-    }),
     CredentialsProvider({
-      name: "Credenciais",
+      name: "credentials",
       credentials: {
-        email: { label: "email", type: "text" },
+        email: { label: "Email", type: "text" },
         senha: { label: "Senha", type: "password" }
       },
       async authorize(credentials) {
-        const { email, senha } = credentials;
-        const user = await getUserByEmail(email);
-        if (!user || !user.senha) return null;
-        const ok = await compare(senha, user.senha);
-        if (!ok) return null;
-        return { id: user.id, email: user.email };
+        try {
+          const { email, senha } = credentials;
+          
+          if (!email || !senha) {
+            throw new Error("Email e senha são obrigatórios");
+          }
+
+          const user = await getUserByEmail(email);
+          if (!user) return null;
+
+          const isValid = await compare(senha, user.senha);
+          if (!isValid) return null;
+
+          return {
+            id: user.id.toString(),
+            email: user.email
+          };
+        } catch (error) {
+          console.error("Erro na autenticação:", error);
+          return null;
+        }
       }
     })
   ],
 
   callbacks: {
-    async jwt({ token, user, account, profile }) {
-      if (account?.provider === "google" && profile) {
-           const existing = await getUserByEmail(profile.email);
-            if (existing) {
-            token.id = existing.id;
-            } else {
-            const client = await pool.connect();
-            const res = await client.query(
-            "INSERT INTO usuario_admin (email) VALUES ($1) RETURNING id",
-            [profile.name ?? "Usuário", profile.email]);
-  token.id = res.rows[0].id;
-}
-      }
-
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.email = user.email;
       }
-
       return token;
     },
-
+    
     async session({ session, token }) {
-      if (token) {
+      if (session?.user) {
         session.user.id = token.id;
+        session.user.email = token.email;
       }
       return session;
     }
   },
 
   pages: {
-    signIn: "/login"
-  }
+    signIn: "/login",
+    error: "/login"
+  },
+
+  session: {
+    strategy: "jwt",
+    maxAge: 4 * 60 * 60, 
+  },
+
+  jwt: {
+    maxAge: 4 * 60 * 60, 
+  },
+
+  secret: process.env.NEXTAUTH_SECRET,
+  
+  debug: process.env.NODE_ENV === "development"
 };
 
 const handler = NextAuth(authOptions);
