@@ -64,7 +64,6 @@ export default function ClientLayoutLayout({ children }) {
         <div style={{ 
           minHeight: '70vh', 
           backgroundColor: '#F5F9F5', 
-          paddingTop: isAdminRoute ? '0' : '20px',
           position: 'relative'
         }}>
           {children}

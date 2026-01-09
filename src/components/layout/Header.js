@@ -135,7 +135,7 @@ export default function Header() {
                 variant="h6"
                 noWrap
                 sx={{
-                  color: '#F2F2F2',
+                  color: '#fff',
                   fontWeight: 800,
                   letterSpacing: 0.5,
                   fontSize: { xs: '1.05rem', md: '1.25rem' },
