@@ -11,6 +11,7 @@ import EventIcon from '@mui/icons-material/Event';
 import PeopleIcon from '@mui/icons-material/People';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import Link from 'next/link';
 
 export default function DivulgacaoPage() {
   return (
@@ -28,6 +29,8 @@ export default function DivulgacaoPage() {
         }}
       >
         <Button
+          component={Link}
+          href="/inscricao"
           variant="contained"
           sx={{
             position: 'absolute',

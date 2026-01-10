@@ -24,7 +24,7 @@ import {
   useTheme,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import EventIcon from '@mui/icons-material/Event';
+import DescriptionIcon from '@mui/icons-material/Description';
 import InfoIcon from '@mui/icons-material/Info';
 import HomeIcon from '@mui/icons-material/Home';
 import LoginIcon from '@mui/icons-material/Login';
@@ -36,7 +36,7 @@ import Image from 'next/image';
 const navItems = [
   { name: 'Início', href: '/', icon: <HomeIcon /> },
   { name: 'Sobre', href: '/#sobre', icon: <InfoIcon /> },
-  { name: 'Regulamentação', href: '/#regulamentacao', icon: <EventIcon /> },
+  { name: 'Regulamentação', href: '/#regulamentacao', icon: <DescriptionIcon /> },
 ];
 
 export default function Header() {
