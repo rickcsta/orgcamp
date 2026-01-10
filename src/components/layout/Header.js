@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import {
@@ -28,7 +27,6 @@ import MenuIcon from '@mui/icons-material/Menu';
 import EventIcon from '@mui/icons-material/Event';
 import InfoIcon from '@mui/icons-material/Info';
 import HomeIcon from '@mui/icons-material/Home';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -305,6 +303,7 @@ export default function Header() {
                   <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
+                    disableScrollLock={true} 
                     onClose={handleMenuClose}
                     anchorOrigin={{
                       vertical: 'bottom',
@@ -484,7 +483,7 @@ export default function Header() {
                       color: theme.palette.primary.main,
                       mr: 2 
                     }}>
-                      <AdminPanelSettingsIcon />
+                      <SettingsIcon/>
                     </Box>
                     <ListItemText 
                       primary="Gerenciamento" 

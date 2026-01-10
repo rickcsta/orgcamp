@@ -163,6 +163,7 @@ export default function AdminLayout({ children }) {
                   <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
+                    disableScrollLock={true} 
                     onClose={handleMenuClose}
                     anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                     transformOrigin={{ vertical: 'top', horizontal: 'right' }}
