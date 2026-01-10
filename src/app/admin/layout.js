@@ -1,285 +1,210 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { signOut, useSession } from 'next-auth/react';
 import {
-  Box,
   AppBar,
   Toolbar,
-  Container,
   Typography,
+  Container,
+  Box,
   IconButton,
-  Menu,
-  MenuItem,
-  Button,
-  Tooltip,
-  Avatar,
   Drawer,
   List,
   ListItem,
-  ListItemButton,
-  ListItemIcon,
   ListItemText,
+  Avatar,
+  Menu,
+  MenuItem,
   Divider,
+  ListItemButton,
+  alpha,
+  useTheme,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import InfoIcon from '@mui/icons-material/Info';
-import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
-import EventIcon from '@mui/icons-material/Event';
-import LogoutIcon from '@mui/icons-material/Logout';
 import HomeIcon from '@mui/icons-material/Home';
+import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
-import { signOut } from 'next-auth/react';
-import AdminGuard from './AdminGuard';
-import Link from 'next/link';
-
-const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, href: '/admin' },
-  { text: 'Sobre Nós', icon: <InfoIcon />, href: '/admin/sobre-nos' },
-  { text: 'Gerenciar Fotos', icon: <PhotoLibraryIcon />, href: '/admin/fotos' },
-  { text: 'Eventos', icon: <EventIcon />, href: '/admin/eventos' },
-];
+import Image from 'next/image';
 
 export default function AdminLayout({ children }) {
+  const { data: session, status } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [anchorElUser, setAnchorElUser] = useState(null);
+  const [mounted, setMounted] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const theme = useTheme();
+  const router = useRouter();
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  const isAuthenticated = status === 'authenticated';
+
+  const handleDrawerToggle = () => setMobileOpen((prev) => !prev);
+  const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
+  const handleMenuClose = () => setAnchorEl(null);
+  const handleLogout = () => {
+    handleMenuClose();
+    signOut({ callbackUrl: '/' });
   };
-
-  const handleOpenUserMenu = (event) => {
-    setAnchorElUser(event.currentTarget);
+  const handleNavigate = (href) => {
+    setMobileOpen(false);
+    handleMenuClose();
+    router.push(href);
   };
-
-  const handleCloseUserMenu = () => {
-    setAnchorElUser(null);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut({ redirect: true, callbackUrl: '/login' });
-      handleCloseUserMenu();
-    } catch (error) {
-      console.error("Erro ao deslogar:", error);
-    }
-  };
-
-  const drawer = (
-    <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center' }}>
-      <Typography variant="h6" sx={{ my: 2 }}>
-        Painel Admin
-      </Typography>
-      <Divider />
-      <List>
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton href={item.href}>
-              <ListItemIcon>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-        <Divider sx={{ my: 1 }} />
-        <ListItem disablePadding>
-          <ListItemButton href="/">
-            <ListItemIcon>
-              <HomeIcon />
-            </ListItemIcon>
-            <ListItemText primary="Voltar ao Site" />
-          </ListItemButton>
-        </ListItem>
-      </List>
-    </Box>
-  );
 
   return (
-    <AdminGuard>
-      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <AppBar
-          position="static"
-          sx={{
-            backgroundColor: '#1B5E20',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          }}
-        >
-          <Container maxWidth="xl">
-            <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
-              {/* Logo/Brand para desktop */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {/* CABEÇALHO */}
+      <AppBar
+        position="static"
+        elevation={1}
+        sx={{
+          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${alpha(
+            theme.palette.primary.dark,
+            0.9
+          )} 100%)`,
+          borderBottom: `1px solid ${alpha(theme.palette.common.white, 0.1)}`,
+        }}
+      >
+        <Container maxWidth="xl">
+          <Toolbar
+            disableGutters
+            sx={{
+              minHeight: { xs: 64, md: 72 },
+              px: { xs: 1.5, sm: 2 },
+              display: 'flex',
+              alignItems: 'center',
+              position: 'relative',
+            }}
+          >
+            {/* LOGO */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                textDecoration: 'none',
+                color: 'inherit',
+                position: 'absolute',
+                left: { xs: 16, sm: 24 },
+              }}
+            >
+              <Box
+                sx={{
+                  width: 52,
+                  height: 52,
+                  mr: 1.5,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '50%',
+                  overflow: 'hidden',
+                  border: `2px solid ${alpha(theme.palette.common.white, 0.3)}`,
+                }}
+              >
+                <Image
+                  src="/logo.png"
+                  alt="Logo"
+                  width={38}
+                  height={38}
+                  style={{ objectFit: 'contain' }}
+                />
+              </Box>
+
               <Typography
                 variant="h6"
                 noWrap
-                component={Link}
-                href="/admin"
                 sx={{
-                  mr: 2,
-                  display: { xs: 'none', md: 'flex' },
-                  fontFamily: 'monospace',
-                  fontWeight: 700,
-                  letterSpacing: '.1rem',
                   color: '#fff',
-                  textDecoration: 'none',
+                  fontWeight: 800,
+                  letterSpacing: 0.5,
+                  fontSize: { xs: '1.05rem', md: '1.25rem' },
+                  display: { xs: 'none', sm: 'block' },
                 }}
               >
-                Área Administrativa
+                PERNAS NA AREIA
               </Typography>
+            </Box>
 
-              {/* Menu Mobile */}
-              <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
-                <IconButton
-                  size="large"
-                  aria-label="menu"
-                  aria-controls="menu-appbar"
-                  aria-haspopup="true"
-                  onClick={handleDrawerToggle}
-                  color="inherit"
-                >
-                  <MenuIcon />
-                </IconButton>
-              </Box>
-
-              {/* Logo/Brand para mobile */}
-              <Typography
-                variant="h5"
-                noWrap
-                component={Link}
-                href="/admin"
-                sx={{
-                  mr: 2,
-                  display: { xs: 'flex', md: 'none' },
-                  flexGrow: 1,
-                  fontFamily: 'monospace',
-                  fontWeight: 700,
-                  letterSpacing: '.1rem',
-                  color: 'inherit',
-                  textDecoration: 'none',
-                }}
-              >
-                Admin
-              </Typography>
-
-              {/* Menu Desktop */}
-              <Box sx={{ 
-                flexGrow: 1, 
-                display: { xs: 'none', md: 'flex' },
-                justifyContent: 'center',
-                gap: 1
-              }}>
-                {menuItems.map((item) => (
-                  <Button
-                    key={item.text}
-                    component={Link}
-                    href={item.href}
+            {/* PERFIL */}
+            <Box sx={{ ml: 'auto', display: 'flex', gap: 2, position: 'absolute', right: { xs: 16, sm: 24 } }}>
+              {isAuthenticated && (
+                <>
+                  <IconButton
+                    onClick={handleMenuOpen}
                     sx={{
-                      my: 2,
-                      color: 'white',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
+                      border: `2px solid ${alpha(theme.palette.common.white, 0.3)}`,
+                      backgroundColor: alpha(theme.palette.common.white, 0.1),
+                      backdropFilter: 'blur(10px)',
+                      transition: 'all 0.3s ease',
                       '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                      }
+                        borderColor: alpha(theme.palette.common.white, 0.5),
+                        backgroundColor: alpha(theme.palette.common.white, 0.2),
+                        transform: 'scale(1.05)',
+                      },
                     }}
                   >
-                    {item.icon}
-                    {item.text}
-                  </Button>
-                ))}
-              </Box>
-
-              {/* Menu do usuário */}
-              <Box sx={{ flexGrow: 0, display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Button
-                  component={Link}
-                  href="/"
-                  sx={{
-                    color: 'white',
-                    display: { xs: 'none', sm: 'flex' },
-                    alignItems: 'center',
-                    gap: 0.5,
-                    '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    }
-                  }}
-                >
-                  <HomeIcon fontSize="small" />
-                  <Typography sx={{ display: { xs: 'none', md: 'block' } }}>
-                    Voltar ao Site
-                  </Typography>
-                </Button>
-
-                <Tooltip title="Configurações da conta">
-                  <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                    <Avatar sx={{ bgcolor: 'white', color: '#1B5E20', width: 32, height: 32 }}>
-                      <PersonIcon fontSize="small" />
-                    </Avatar>
+                    {session?.user?.image ? (
+                      <Avatar 
+                        src={session.user.image} 
+                        sx={{ width: 36, height: 36, border: `2px solid ${alpha(theme.palette.common.white, 0.5)}` }}
+                      />
+                    ) : (
+                      <Avatar sx={{ width: 36, height: 36, bgcolor: alpha(theme.palette.common.white, 0.2), color: 'white' }}>
+                        <PersonIcon fontSize="small" />
+                      </Avatar>
+                    )}
                   </IconButton>
-                </Tooltip>
-                <Menu
-                  sx={{ mt: '45px' }}
-                  id="menu-appbar"
-                  anchorEl={anchorElUser}
-                  anchorOrigin={{
-                    vertical: 'top',
-                    horizontal: 'right',
-                  }}
-                  keepMounted
-                  transformOrigin={{
-                    vertical: 'top',
-                    horizontal: 'right',
-                  }}
-                  open={Boolean(anchorElUser)}
-                  onClose={handleCloseUserMenu}
-                >
-                  <MenuItem onClick={handleLogout}>
-                    <ListItemIcon>
-                      <LogoutIcon fontSize="small" />
-                    </ListItemIcon>
-                    <Typography textAlign="center">Sair</Typography>
-                  </MenuItem>
-                </Menu>
-              </Box>
-            </Toolbar>
-          </Container>
-        </AppBar>
 
-        {/* Drawer Mobile */}
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true,
-          }}
-          sx={{
-            display: { xs: 'block', md: 'none' },
-            '& .MuiDrawer-paper': { 
-              boxSizing: 'border-box', 
-              width: 280,
-              backgroundColor: '#F5F9F5',
-            },
-          }}
-        >
-          {drawer}
-        </Drawer>
+                  <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={handleMenuClose}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                    PaperProps={{
+                      elevation: 3,
+                      sx: { mt: 1.5, minWidth: 220, borderRadius: 2, overflow: 'hidden', border: `1px solid ${theme.palette.divider}` },
+                    }}
+                  >
+                    <MenuItem disabled sx={{ opacity: 1, py: 1.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                        <Avatar sx={{ width: 32, height: 32, mr: 1.5, bgcolor: theme.palette.primary.main }}>
+                          {session?.user?.name?.[0] || 'U'}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body2" fontWeight={600}>{session?.user?.name || 'Usuário'}</Typography>
+                          <Typography variant="caption" color="text.secondary" noWrap>{session?.user?.email}</Typography>
+                        </Box>
+                      </Box>
+                    </MenuItem>
+                    <Divider />
+                    <MenuItem onClick={() => handleNavigate('/')} sx={{ py: 1.5 }}>
+                      <HomeIcon sx={{ mr: 1.5, fontSize: 20 }} />
+                      <Typography variant="body2">Voltar ao site</Typography>
+                    </MenuItem>
+                    <MenuItem onClick={handleLogout} sx={{ py: 1.5 }}>
+                      <LogoutIcon sx={{ mr: 1.5, fontSize: 20 }} />
+                      <Typography variant="body2">Sair</Typography>
+                    </MenuItem>
+                  </Menu>
+                </>
+              )}
+            </Box>
+          </Toolbar>
+        </Container>
+      </AppBar>
 
-        {/* Conteúdo principal */}
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            p: 3,
-            backgroundColor: '#F5F9F5',
-            minHeight: 'calc(100vh - 64px)',
-          }}
-        >
-          <Container maxWidth="lg" sx={{ mt: 2 }}>
-            {children}
-          </Container>
-        </Box>
+      {/* CONTEÚDO PRINCIPAL */}
+      <Box component="main" sx={{ flexGrow: 1, p: 3, backgroundColor: '#F5F9F5', minHeight: 'calc(100vh - 64px)' }}>
+        <Container maxWidth="lg" sx={{ mt: 2 }}>
+          {children} {/* Aqui a página vai renderizar */}
+        </Container>
       </Box>
-    </AdminGuard>
+    </Box>
   );
 }

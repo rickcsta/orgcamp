@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import {
   AppBar,
@@ -36,8 +37,8 @@ import Image from 'next/image';
 
 const navItems = [
   { name: 'Início', href: '/', icon: <HomeIcon /> },
-  { name: 'Sobre', href: '/sobre-nos', icon: <InfoIcon /> },
-  { name: 'Regulamentação', href: '/eventos', icon: <EventIcon /> },
+  { name: 'Sobre', href: '/#sobre', icon: <InfoIcon /> },
+  { name: 'Regulamentação', href: '/#regulamentacao', icon: <EventIcon /> },
 ];
 
 export default function Header() {
@@ -46,6 +47,8 @@ export default function Header() {
   const [mounted, setMounted] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const theme = useTheme();
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     setMounted(true);
@@ -70,6 +73,57 @@ export default function Header() {
   const handleLogout = () => {
     handleMenuClose();
     signOut({ callbackUrl: '/' });
+  };
+
+  // Função para navegação com rolagem
+  const handleNavigate = (href, event) => {
+    if (event) event.preventDefault();
+    
+    // Fecha o drawer mobile
+    setMobileOpen(false);
+    handleMenuClose();
+    
+    // Se tem # na URL (âncora)
+    if (href.includes('#')) {
+      const [path, anchor] = href.split('#');
+      
+      // Se já está na página inicial
+      if (pathname === '/' || pathname === '') {
+        // Fecha o drawer
+        setMobileOpen(false);
+        
+        // Aguarda um pouco para garantir que o drawer fechou
+        setTimeout(() => {
+          const element = document.getElementById(anchor);
+          if (element) {
+            // Rola suavemente para o elemento
+            element.scrollIntoView({ 
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }
+        }, 100);
+      } else {
+        // Se está em outra página, navega para a página inicial
+        router.push(href);
+        
+        // Rola após a navegação (será tratado na página)
+        setTimeout(() => {
+          if (window.location.hash === `#${anchor}`) {
+            const element = document.getElementById(anchor);
+            if (element) {
+              element.scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+              });
+            }
+          }
+        }, 500);
+      }
+    } else {
+      // Navegação normal sem âncora
+      router.push(href);
+    }
   };
 
   return (
@@ -98,8 +152,6 @@ export default function Header() {
           >
             {/* LOGO - ESQUERDA */}
             <Box
-              component={Link}
-              href="/"
               sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -162,8 +214,7 @@ export default function Header() {
               {navItems.map((item) => (
                 <Button
                   key={item.name}
-                  component={Link}
-                  href={item.href}
+                  onClick={(e) => handleNavigate(item.href, e)}
                   startIcon={React.cloneElement(item.icon, { 
                     sx: { fontSize: 18, color: 'white' } 
                   })}
@@ -216,31 +267,6 @@ export default function Header() {
             }}>
               {isAuthenticated ? (
                 <>
-                  <Button
-                    component={Link}
-                    href="/admin"
-                    variant="contained"
-                    startIcon={<AdminPanelSettingsIcon sx={{ fontSize: 18 }} />}
-                    sx={{
-                      backgroundColor: 'white',
-                      color: theme.palette.primary.main,
-                      fontWeight: 700,
-                      textTransform: 'none',
-                      px: 3,
-                      py: 1,
-                      borderRadius: 2,
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        backgroundColor: theme.palette.grey[100],
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 6px 16px rgba(0,0,0,0.2)',
-                      },
-                    }}
-                  >
-                    Gerenciamento
-                  </Button>
-
                   <IconButton
                     onClick={handleMenuOpen}
                     sx={{
@@ -323,9 +349,10 @@ export default function Header() {
                     </MenuItem>
                     <Divider />
                     <MenuItem 
-                      component={Link} 
-                      href="/admin" 
-                      onClick={handleMenuClose}
+                      onClick={() => {
+                        handleMenuClose();
+                        handleNavigate('/admin');
+                      }}
                       sx={{ py: 1.5 }}
                     >
                       <SettingsIcon sx={{ mr: 1.5, fontSize: 20 }} />
@@ -342,8 +369,7 @@ export default function Header() {
                 </>
               ) : (
                 <Button
-                  component={Link}
-                  href="/login"
+                  onClick={() => handleNavigate('/login')}
                   variant="outlined"
                   startIcon={<LoginIcon sx={{ fontSize: 18 }} />}
                   sx={{
@@ -414,9 +440,7 @@ export default function Header() {
             {navItems.map((item) => (
               <ListItem key={item.name} disablePadding>
                 <ListItemButton
-                  component={Link}
-                  href={item.href}
-                  onClick={handleDrawerToggle}
+                  onClick={(e) => handleNavigate(item.href, e)}
                   sx={{ 
                     py: 1.5,
                     px: 3,
@@ -447,9 +471,7 @@ export default function Header() {
               <>
                 <ListItem disablePadding>
                   <ListItemButton
-                    component={Link}
-                    href="/admin"
-                    onClick={handleDrawerToggle}
+                    onClick={() => handleNavigate('/admin')}
                     sx={{ 
                       py: 1.5,
                       px: 3,
@@ -502,9 +524,7 @@ export default function Header() {
             ) : (
               <ListItem disablePadding>
                 <ListItemButton 
-                  component={Link} 
-                  href="/login"
-                  onClick={handleDrawerToggle}
+                  onClick={() => handleNavigate('/login')}
                   sx={{ 
                     py: 1.5,
                     px: 3,

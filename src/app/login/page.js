@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import {
   Container, Paper, TextField, Typography, Button,
-  Box, Alert, Snackbar
+  Alert, Snackbar
 } from '@mui/material';
 import LoginIcon from '@mui/icons-material/Login';
 import { signIn } from "next-auth/react";
@@ -11,7 +11,11 @@ import { signIn } from "next-auth/react";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success"
+  });
 
   const handleLogin = async () => {
     const result = await signIn("credentials", {
@@ -21,15 +25,30 @@ export default function LoginPage() {
     });
 
     if (result?.error) {
-      alert("Credenciais inválidas!");
+      setSnackbar({
+        open: true,
+        message: "Credenciais inválidas! Verifique seu email e senha.",
+        severity: "error"
+      });
       return;
     }
 
-    setOpenSnackbar(true);
+    setSnackbar({
+      open: true,
+      message: "Login realizado com sucesso!",
+      severity: "success"
+    });
 
     setTimeout(() => {
       window.location.href = "/";
     }, 1500);
+  };
+
+  const handleCloseSnackbar = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setSnackbar({ ...snackbar, open: false });
   };
 
   return (
@@ -73,8 +92,19 @@ export default function LoginPage() {
         </Button>
       </Paper>
 
-      <Snackbar open={openSnackbar} autoHideDuration={2500}>
-        <Alert severity="success">Login realizado com sucesso!</Alert>
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={snackbar.severity === "error" ? 4000 : 2500}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
       </Snackbar>
     </Container>
   );
