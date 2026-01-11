@@ -1,6 +1,10 @@
 'use client';
 
-import { Box, Button, Typography, Container, Paper, Stack, IconButton } from '@mui/material';
+import { useState } from 'react';
+import { 
+  Box, Button, Typography, Container, Paper, Stack, IconButton, 
+  Modal, Fade, Backdrop, Grid, Card, CardContent
+} from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import DescriptionIcon from '@mui/icons-material/Description';
 import ArticleIcon from '@mui/icons-material/Article';
@@ -11,9 +15,22 @@ import EventIcon from '@mui/icons-material/Event';
 import PeopleIcon from '@mui/icons-material/People';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import CloseIcon from '@mui/icons-material/Close';
+import EditNoteIcon from '@mui/icons-material/EditNote';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import Link from 'next/link';
 
 export default function DivulgacaoPage() {
+  const [openModal, setOpenModal] = useState(false);
+
+  const handleOpenModal = () => {
+    setOpenModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+  };
+
   return (
     <Box sx={{ minHeight: '100vh' }}>
       {/* HERO COM IMAGEM */}
@@ -29,8 +46,7 @@ export default function DivulgacaoPage() {
         }}
       >
         <Button
-          component={Link}
-          href="/inscricao"
+          onClick={handleOpenModal}
           variant="contained"
           sx={{
             position: 'absolute',
@@ -63,6 +79,147 @@ export default function DivulgacaoPage() {
           INSCREVA-SE AGORA
         </Button>
       </Box>
+
+      {/* MODAL SIMPLIFICADO */}
+      <Modal
+        open={openModal}
+        onClose={handleCloseModal}
+        disableScrollLock={true} 
+        closeAfterTransition
+        slots={{ backdrop: Backdrop }}
+        slotProps={{
+          backdrop: {
+            timeout: 300,
+          },
+        }}
+      >
+        <Fade in={openModal}>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: { xs: '95%', sm: '400px' },
+              bgcolor: 'background.paper',
+              borderRadius: 3,
+              boxShadow: 24,
+              p: 0,
+              outline: 'none',
+            }}
+          >
+            {/* CABEÇALHO SIMPLES */}
+            <Box
+              sx={{
+                p: 3,
+                pb: 2,
+                borderBottom: '1px solid #eee',
+                position: 'relative',
+              }}
+            >
+              <IconButton
+                onClick={handleCloseModal}
+                sx={{
+                  position: 'absolute',
+                  right: 8,
+                  top: 8,
+                  color: '#666',
+                }}
+                size="small"
+              >
+                <CloseIcon />
+              </IconButton>
+              
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: 700,
+                  color: '#1a1a1a',
+                  textAlign: 'center',
+                }}
+              >
+                Inscrições
+              </Typography>
+            </Box>
+
+            {/* OPÇÕES SIMPLES */}
+            <Box sx={{ p: 3 }}>
+              <Stack spacing={2}>
+                {/* NOVA INSCRIÇÃO */}
+                <Button
+                  component={Link}
+                  href="/inscricao/nova"
+                  onClick={handleCloseModal}
+                  variant="contained"
+                  startIcon={<EditNoteIcon />}
+                  fullWidth
+                  sx={{
+                    py: 2,
+                    backgroundColor: '#FFD700',
+                    color: '#1a1a1a',
+                    fontWeight: 600,
+                    fontSize: '1rem',
+                    borderRadius: 2,
+                    '&:hover': {
+                      backgroundColor: '#FFC400',
+                    }
+                  }}
+                >
+                  Nova Inscrição
+                </Button>
+
+                {/* ACOMPANHAR INSCRIÇÃO */}
+                <Button
+                  component={Link}
+                  href="/inscricao/acompanhar"
+                  onClick={handleCloseModal}
+                  variant="outlined"
+                  startIcon={<VisibilityIcon />}
+                  fullWidth
+                  sx={{
+                    py: 2,
+                    borderColor: '#ddd',
+                    color: '#555',
+                    fontWeight: 600,
+                    fontSize: '1rem',
+                    borderRadius: 2,
+                    '&:hover': {
+                      borderColor: '#FFD700',
+                      backgroundColor: 'rgba(255, 215, 0, 0.05)',
+                    }
+                  }}
+                >
+                  Acompanhar Inscrição
+                </Button>
+              </Stack>
+
+              {/* INFORMAÇÃO RÁPIDA */}
+              <Box
+                sx={{
+                  mt: 3,
+                  p: 2,
+                  borderRadius: 2,
+                  backgroundColor: '#f9f9f9',
+                  borderLeft: '3px solid #FFD700',
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: '#666',
+                    fontSize: '0.8rem',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  • Inscrições até: 10/06/2024<br/>
+                  • Vagas limitadas<br/>
+                  • Dúvidas: contato@evento.com
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+        </Fade>
+      </Modal>
 
       {/* SEÇÃO SOBRE O EVENTO */}
       <Box 
@@ -100,13 +257,11 @@ export default function DivulgacaoPage() {
             </Typography>
           </Box>
 
-          {/* CONTEÚDO PRINCIPAL COM VÍDEO E TEXTO */}
           <Stack 
             direction={{ xs: 'column', md: 'row' }} 
             spacing={6}
             sx={{ mb: 8 }}
           >
-            {/* VÍDEO */}
             <Box sx={{ flex: 1 }}>
               <Paper 
                 elevation={3}
@@ -121,7 +276,6 @@ export default function DivulgacaoPage() {
                   justifyContent: 'center',
                 }}
               >
-                {/* ESPAÇO PARA O VÍDEO */}
                 <Box
                   sx={{
                     width: '100%',
@@ -132,12 +286,11 @@ export default function DivulgacaoPage() {
                     position: 'relative',
                   }}
                 >
-                  {/* Thumbnail do vídeo ou player */}
                   <Box
                     sx={{
                       width: '100%',
                       height: '100%',
-                      backgroundImage: "url('/video-thumbnail.jpg')", // Adicione uma thumbnail
+                      backgroundImage: "url('/video-thumbnail.jpg')",
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',
                       display: 'flex',
@@ -149,7 +302,6 @@ export default function DivulgacaoPage() {
                       }
                     }}
                   >
-                    {/* Botão de play */}
                     <IconButton
                       className="play-button"
                       sx={{
@@ -163,26 +315,12 @@ export default function DivulgacaoPage() {
                         }
                       }}
                       onClick={() => {
-                        // Adicione lógica para abrir o vídeo
-                        // Ex: window.open('https://youtube.com/seu-video', '_blank')
+                        
                       }}
                     >
                       <PlayCircleOutlineIcon sx={{ fontSize: 50 }} />
                     </IconButton>
                   </Box>
-                  
-                  {/* Ou use um player de vídeo embutido */}
-                  {/* 
-                  <iframe
-                    width="100%"
-                    height="100%"
-                    src="https://www.youtube.com/embed/SEU_VIDEO_ID"
-                    title="Vídeo sobre o evento"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                  */}
                 </Box>
               </Paper>
               
@@ -191,7 +329,6 @@ export default function DivulgacaoPage() {
               </Typography>
             </Box>
 
-            {/* INFORMAÇÕES DO EVENTO */}
             <Box sx={{ flex: 1 }}>
               <Typography variant="h4" sx={{ fontWeight: 700, mb: 4, color: '#1a1a1a' }}>
                 SEGUNDA EDIÇÃO
@@ -256,7 +393,6 @@ export default function DivulgacaoPage() {
         </Container>
       </Box>
 
-
       {/* SEÇÃO DE REGULAMENTAÇÃO */}
       <Box 
         id="regulamentacao" 
@@ -298,7 +434,6 @@ export default function DivulgacaoPage() {
             spacing={4}
             sx={{ mb: 8 }}
           >
-            {/* CARTA DO DOCUMENTO PRINCIPAL */}
             <Paper 
               elevation={3}
               sx={{
@@ -347,7 +482,7 @@ export default function DivulgacaoPage() {
                   variant="contained"
                   startIcon={<DownloadIcon />}
                   href="/regulamento-oficial.pdf" 
-                  download="Regulamento_Pernas_Na_Areia_2024.pdf"
+                  download="Regulamento_Pernas_Na_Areia_2025.pdf"
                   sx={{
                     backgroundColor: '#FFD700',
                     color: '#1a1a1a',
@@ -366,11 +501,10 @@ export default function DivulgacaoPage() {
               </Box>
               
               <Typography variant="caption" sx={{ mt: 4, color: '#999' }}>
-                Tamanho: 2.5 MB
+                Tamanho: 144 KB
               </Typography>
             </Paper>
 
-            {/* LISTA DE TÓPICOS IMPORTANTES */}
             <Box sx={{ flex: 1 }}>
               <Typography variant="h5" sx={{ fontWeight: 700, mb: 4, color: '#1a1a1a' }}>
                 Tópicos Importantes
@@ -432,7 +566,6 @@ export default function DivulgacaoPage() {
             </Box>
           </Stack>
 
-          {/* AVISOS IMPORTANTES */}
           <Paper 
             elevation={2}
             sx={{
@@ -457,8 +590,6 @@ export default function DivulgacaoPage() {
               <strong> teste@teste.com</strong>
             </Typography>
           </Paper>
-
-         
         </Container>
       </Box>
     </Box>
