@@ -44,6 +44,8 @@ export async function POST(request) {
     const errors = [];
     
     if (!data.responsavel_nome?.trim()) errors.push('Nome do responsável é obrigatório');
+    if (!data.responsavel_email?.trim()) errors.push('Email do responsável é obrigatório');
+    if (!data.responsavel_numero?.trim()) errors.push('Número do responsável é obrigatório');
     if (!data.jogador1_nome?.trim()) errors.push('Nome do jogador 1 é obrigatório');
     if (!data.jogador1_nascimento) errors.push('Data de nascimento do jogador 1 é obrigatória');
     if (!data.jogador1_camisa) errors.push('Tamanho da camisa do jogador 1 é obrigatório');
@@ -136,14 +138,16 @@ export async function POST(request) {
       // Criar dupla
       const duplaResult = await client.query(`
         INSERT INTO duplas (
-          responsavel_nome,
+          responsavel_nome, responsavel_email, responsavel_numero,
           jogador1_nome, jogador1_nascimento, jogador1_camisa,
           jogador2_nome, jogador2_nascimento, jogador2_camisa,
           valor_total, codigo_rastreio, expira_em, status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW() + INTERVAL '30 minutes', 'aguardando_pagamento')
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW() + INTERVAL '30 minutes', 'aguardando_pagamento')
         RETURNING id, codigo_rastreio, expira_em
       `, [
         data.responsavel_nome.trim(),
+        data.responsavel_email.trim(),
+        data.responsavel_numero.trim(),
         data.jogador1_nome.trim(),
         data.jogador1_nascimento,
         data.jogador1_camisa,

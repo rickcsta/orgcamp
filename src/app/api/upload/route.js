@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { put } from '@vercel/blob';
 
+export const runtime = 'nodejs';
+
+export const config = {
+  api: {
+    bodyParser: false,
+    responseLimit: false,
+  },
+};
+
 export async function POST(request) {
   try {
     console.log('=== INICIANDO UPLOAD ===');

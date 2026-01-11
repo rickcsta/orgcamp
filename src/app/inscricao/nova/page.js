@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Stack,
   Container, Paper, TextField, Typography, Button,
   Alert, Snackbar, MenuItem, Grid, Box, Card, CardContent,
   Stepper, Step, StepLabel, Avatar, Chip,
   Tooltip, Divider, LinearProgress, FormControl, InputLabel, Select,
-  Checkbox, ListItemText
+  Checkbox, ListItemText,
+  FormControlLabel,
 } from '@mui/material';
 import {
   HowToReg, Person, Email, WhatsApp, Category, CalendarToday,
@@ -14,6 +16,7 @@ import {
   QrCode, AccountBalance, ContentCopy, AccessTime, ArrowBack,
   Warning, People, PeopleOutline, HourglassEmpty
 } from '@mui/icons-material';
+
 
 const steps = ['Dados da Dupla', 'Documentação', 'Pagamento', 'Confirmação'];
 
@@ -76,6 +79,8 @@ const api = {
 
       const payload = {
         responsavel_nome: formData.responsavel_nome,
+        responsavel_email: formData.responsavel_email,
+        responsavel_numero: formData.responsavel_numero,
         jogador1_nome: formData.jogador1_nome,
         jogador1_nascimento: formData.jogador1_nascimento,
         jogador1_camisa: formData.jogador1_camisa,
@@ -172,12 +177,15 @@ export default function InscricaoPage() {
   const [activeStep, setActiveStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState({
-    responsavel_nome: '',
+    responsavel_nome: '',  responsavel_email: '',  responsavel_numero: '', 
     categorias: [],
     jogador1_nome: '', jogador1_nascimento: '', jogador1_camisa: '',
     jogador2_nome: '', jogador2_nascimento: '', jogador2_camisa: ''
   });
   
+
+  const router = useRouter();
+
   const [files, setFiles] = useState({ documento_jogador1: null, documento_jogador2: null });
   const [inscricaoData, setInscricaoData] = useState(null);
   const [timeLeft, setTimeLeft] = useState(null);
@@ -187,6 +195,8 @@ export default function InscricaoPage() {
   const [errosValidacao, setErrosValidacao] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [vagas, setVagas] = useState({});
+  const [cienteErro, setCienteErro] = useState(false);
+  const [aceitaRegulamento, setAceitaRegulamento] = useState(false);
 
   // Carregar categorias da API
   useEffect(() => {
@@ -375,16 +385,41 @@ export default function InscricaoPage() {
     setForm({ ...form, categorias: novasCategorias });
   };
 
-  const handleFileChange = (e, fileType) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (fileType === 'comprovante_pagamento') {
-        setComprovanteFile(file);
-      } else {
-        setFiles({ ...files, [fileType]: file });
-      }
-    }
-  };
+  const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+
+const handleFileChange = (e, fileType) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // Tamanho
+  if (file.size > MAX_SIZE) {
+    setSnackbar({
+      open: true,
+      message: '❌ Arquivo maior que 5MB',
+      severity: 'error'
+    });
+    e.target.value = null;
+    return;
+  }
+
+  // Tipo
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    setSnackbar({
+      open: true,
+      message: '❌ Tipo inválido. Use PDF, JPG ou PNG',
+      severity: 'error'
+    });
+    e.target.value = null;
+    return;
+  }
+
+  if (fileType === 'comprovante_pagamento') {
+    setComprovanteFile(file);
+  } else {
+    setFiles(prev => ({ ...prev, [fileType]: file }));
+  }
+};
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
@@ -451,7 +486,7 @@ export default function InscricaoPage() {
     
     switch(activeStep) {
       case 0:
-        const requiredFields = ['responsavel_nome', 
+        const requiredFields = ['responsavel_nome', 'responsavel_email', 'responsavel_numero', 
                               'jogador1_nome', 'jogador1_nascimento', 'jogador1_camisa',
                               'jogador2_nome', 'jogador2_nascimento', 'jogador2_camisa'];
         
@@ -476,7 +511,13 @@ export default function InscricaoPage() {
         return false;
         
       case 1:
-        return !files.documento_jogador1 || !files.documento_jogador2;
+  return (
+    !files.documento_jogador1 ||
+    !files.documento_jogador2 ||
+    !cienteErro ||
+    !aceitaRegulamento
+  );
+
         
       case 2:
         return !comprovanteFile;
@@ -491,7 +532,7 @@ export default function InscricaoPage() {
 
   const handleNext = async () => {
     if (activeStep === 0) {
-      const requiredFields = ['responsavel_nome', 
+      const requiredFields = ['responsavel_nome', 'responsavel_email', 'responsavel_numero', 
                             'jogador1_nome', 'jogador1_nascimento', 'jogador1_camisa',
                             'jogador2_nome', 'jogador2_nascimento', 'jogador2_camisa'];
       
@@ -659,6 +700,12 @@ export default function InscricaoPage() {
         setIsLoading(false);
       }
     }
+
+    if (activeStep === 3) {
+  router.replace('/');
+  return;
+}
+
   };
 
   const handleBack = () => {
@@ -695,6 +742,38 @@ export default function InscricaoPage() {
                     required
                     error={!form.responsavel_nome}
                     helperText={!form.responsavel_nome ? "Campo obrigatório" : ""}
+                  />
+                </Stack>
+
+                <br>
+                </br>
+
+                <Stack spacing={2}>
+                  <TextField
+                    fullWidth
+                    label="Email que você tenha acesso"
+                    name="responsavel_email"
+                    value={form.responsavel_email}
+                    onChange={handleChange}
+                    required
+                    error={!form.responsavel_email}
+                    helperText={!form.responsavel_email ? "Campo obrigatório" : ""}
+                  />
+                </Stack>
+
+                <br>
+                </br>
+
+                <Stack spacing={2}>
+                  <TextField
+                    fullWidth
+                    label="Número para contato"
+                    name="responsavel_numero"
+                    value={form.responsavel_numero}
+                    onChange={handleChange}
+                    required
+                    error={!form.responsavel_numero}
+                    helperText={!form.responsavel_numero ? "Campo obrigatório" : ""}
                   />
                 </Stack>
               </CardContent>
@@ -920,7 +999,7 @@ export default function InscricaoPage() {
                             bgcolor: disabled ? '#f5f5f5' : 'transparent'
                           }}
                         >
-                          <Checkbox checked={form.categorias.includes(cat.id.toString())} />
+                          
                           <ListItemText 
                             primaryTypographyProps={{ component: 'div' }}
                             secondaryTypographyProps={{ component: 'div' }}
@@ -1127,7 +1206,7 @@ export default function InscricaoPage() {
               </Box>
               
               <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                Após preencher os dados, anexe os documentos dos jogadores para reservar as vagas.
+                Anexe os documentos dos jogadores para reservar as vagas.
               </Typography>
               
               <Box sx={{ 
@@ -1198,6 +1277,52 @@ export default function InscricaoPage() {
                   </Box>
                 ))}
               </Box>
+
+              <Divider sx={{ my: 4 }} />
+
+<Box>
+  <FormControlLabel
+    control={
+      <Checkbox
+        checked={cienteErro}
+        onChange={(e) => setCienteErro(e.target.checked)}
+        color="primary"
+      />
+    }
+    label={
+      <Typography variant="body2">
+        Declaro estar ciente de que qualquer erro nas informações da inscrição,
+        anexos ou dados dos atletas é de responsabilidade do usuário e pode
+        resultar na <strong>recusa da inscrição</strong>.
+      </Typography>
+    }
+  />
+
+  <FormControlLabel
+    control={
+      <Checkbox
+        checked={aceitaRegulamento}
+        onChange={(e) => setAceitaRegulamento(e.target.checked)}
+        color="primary"
+      />
+    }
+    label={
+      <Typography variant="body2">
+        Li e estou de acordo com o <strong>regulamento da competição</strong>.
+      </Typography>
+    }
+  />
+
+  {(!cienteErro || !aceitaRegulamento) && (
+    <Alert severity="warning" sx={{ mt: 2 }}>
+      <Typography variant="caption">
+        Para continuar, é obrigatório confirmar ciência sobre os erros de
+        inscrição e aceitar o regulamento.
+      </Typography>
+    </Alert>
+  )}
+</Box>
+
             </CardContent>
           </Card>
         );
@@ -1228,7 +1353,7 @@ export default function InscricaoPage() {
                           </Typography>
                           <Alert severity="warning" sx={{ bgcolor: 'rgba(255,255,255,0.9)' }}>
                             <Typography variant="body2" fontWeight={600} align="center">
-                              ⚠️ SALVE ESTE CÓDIGO! ELE SERÁ UTILIZADO PARA VIZUALIZAR O STATUS DA INSCRIÇÃO!
+                               SALVE ESTE CÓDIGO! ELE SERÁ UTILIZADO PARA VIZUALIZAR O STATUS DA SUA INSCRIÇÃO!
                             </Typography>
                           </Alert>
                         </CardContent>
@@ -1240,7 +1365,7 @@ export default function InscricaoPage() {
                           <HourglassEmpty sx={{ fontSize: 40, flexShrink: 0 }} />
                           <Box>
                             <Typography variant="subtitle1" fontWeight={600}>
-                              ⚠️ PAGUE EM ATÉ {timeLeft ? formatTime(timeLeft) : '30:00'}
+                              PAGUE EM ATÉ {timeLeft ? formatTime(timeLeft) : '30:00'}
                             </Typography>
                             <Typography variant="body2">
                               Suas vagas estão <strong>reservadas temporariamente</strong>. 
@@ -1535,6 +1660,10 @@ export default function InscricaoPage() {
                     <Box>
                       <Typography variant="caption" color="text.secondary">Nome:</Typography>
                       <Typography variant="body1" fontWeight={600}>{form.responsavel_nome}</Typography>
+                      <Typography variant="caption" color="text.secondary">Email:</Typography>
+                      <Typography variant="body1" fontWeight={600}>{form.responsavel_mail}</Typography>
+                      <Typography variant="caption" color="text.secondary">Número:</Typography>
+                      <Typography variant="body1" fontWeight={600}>{form.responsavel_numero}</Typography>
                     </Box>
                   </Box>
                 </Card>
@@ -1615,16 +1744,42 @@ export default function InscricaoPage() {
 
       <Paper elevation={2} sx={{ p: { xs: 2, md: 4 }, borderRadius: 3 }}>
         {getStepContent(activeStep)}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4, pt: 3, borderTop: '1px solid #e0e0e0' }}>
-          <Button onClick={handleBack} disabled={activeStep === 0 || isLoading} variant="outlined" startIcon={<ArrowBack />}>Voltar</Button>
-          <Button 
-            variant="contained" 
-            onClick={handleNext}
-            disabled={isNextButtonDisabled()}
-          >
-            {isLoading ? 'Processando...' : activeStep === steps.length - 1 ? 'Finalizar' : activeStep === 1 ? 'Salvar e Reservar Vagas' : activeStep === 2 ? 'Enviar Comprovante' : 'Próximo'}
-          </Button>
-        </Box>
+        <Box
+  sx={{
+    display: 'flex',
+    justifyContent: activeStep < 2 ? 'space-between' : 'center',
+    mt: 4,
+    pt: 3,
+    borderTop: '1px solid #e0e0e0'
+  }}
+>
+  {activeStep < 2 && (
+    <Button
+      onClick={handleBack}
+      disabled={activeStep === 0 || isLoading}
+      variant="outlined"
+      startIcon={<ArrowBack />}
+    >
+      Voltar
+    </Button>
+  )}
+
+  <Button
+    variant="contained"
+    onClick={handleNext}
+    disabled={isNextButtonDisabled()}
+  >
+    {isLoading
+      ? 'Processando...'
+      : activeStep === steps.length - 1
+      ? 'Finalizar'
+      : activeStep === 1
+      ? 'Salvar e Reservar Vagas'
+      : activeStep === 2
+      ? 'Enviar Comprovante'
+      : 'Próximo'}
+  </Button>
+</Box>
       </Paper>
 
       <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={handleCloseSnackbar} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
