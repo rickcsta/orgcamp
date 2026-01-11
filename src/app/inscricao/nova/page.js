@@ -12,7 +12,7 @@ import {
   HowToReg, Person, Email, WhatsApp, Category, CalendarToday,
   AttachFile, CloudUpload, Info, CheckCircle, PersonAdd,
   QrCode, AccountBalance, ContentCopy, AccessTime, ArrowBack,
-  Warning
+  Warning, People, PeopleOutline, HourglassEmpty
 } from '@mui/icons-material';
 
 const steps = ['Dados da Dupla', 'Documentação', 'Pagamento', 'Confirmação'];
@@ -30,95 +30,11 @@ const calcularIdade = (dataNascimento) => {
   const mesNascimento = nascimento.getMonth();
   const diaNascimento = nascimento.getDate();
   
-  // Ajusta se ainda não fez aniversário este ano
   if (mesAtual < mesNascimento || (mesAtual === mesNascimento && diaAtual < diaNascimento)) {
     idade--;
   }
   
   return idade;
-};
-
-const validarCategoriaPorIdade = (idade, categoria) => {
-  if (idade === null) return { valida: false, motivo: 'Data de nascimento inválida' };
-  
-  switch(categoria) {
-    case 'sub17_masculino':
-    case 'sub17_feminino':
-      return idade <= 17 ? 
-        { valida: true } : 
-        { valida: false, motivo: `Idade ${idade} anos não permite jogar Sub 17 (máximo 17 anos)` };
-    
-    case 'sub21_masculino':
-    case 'sub21_feminino':
-      return idade <= 21 ? 
-        { valida: true } : 
-        { valida: false, motivo: `Idade ${idade} anos não permite jogar Sub 21 (máximo 21 anos)` };
-    
-    case 'open_masculino':
-    case 'open_feminino':
-      // CORREÇÃO: Open aceita QUALQUER IDADE (sem restrições)
-      return { valida: true };
-    
-    default:
-      return { valida: false, motivo: 'Categoria desconhecida' };
-  }
-};
-
-// Função para validar dupla em múltiplas categorias
-const validarDuplaParaCategorias = (jogador1Nascimento, jogador2Nascimento, categoriasSelecionadas) => {
-  const idadeJogador1 = calcularIdade(jogador1Nascimento);
-  const idadeJogador2 = calcularIdade(jogador2Nascimento);
-  
-  const resultados = [];
-  
-  categoriasSelecionadas.forEach(categoria => {
-    const validacaoJogador1 = validarCategoriaPorIdade(idadeJogador1, categoria);
-    const validacaoJogador2 = validarCategoriaPorIdade(idadeJogador2, categoria);
-    
-    resultados.push({
-      categoria,
-      jogador1: validacaoJogador1,
-      jogador2: validacaoJogador2,
-      valida: validacaoJogador1.valida && validacaoJogador2.valida
-    });
-  });
-  
-  return {
-    valida: resultados.every(r => r.valida),
-    detalhes: resultados,
-    idades: {
-      jogador1: idadeJogador1,
-      jogador2: idadeJogador2
-    }
-  };
-};
-
-// Restante das funções auxiliares...
-const addMinutesToNow = (minutes) => {
-  return new Date(Date.now() + minutes * 60000).getTime();
-};
-
-const saveToDatabase = async (data) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const codigoRastreio = `PNA${Date.now().toString().slice(-6)}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-      resolve({
-        success: true,
-        codigo_rastreio: codigoRastreio,
-        expira_em: addMinutesToNow(30),
-        status: 'aguardando_pagamento',
-        dados: data
-      });
-    }, 1000);
-  });
-};
-
-const sendComprovante = async () => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ success: true, status: 'pendente' });
-    }, 1000);
-  });
 };
 
 const pixInfo = {
@@ -128,15 +44,6 @@ const pixInfo = {
   valor: 'R$ 150,00'
 };
 
-const categorias = [
-  { value: 'sub17_masculino', label: 'Sub 17 - Masculino', idade: 'Até 17 anos', valor: 150 },
-  { value: 'sub17_feminino', label: 'Sub 17 - Feminino', idade: 'Até 17 anos', valor: 150 },
-  { value: 'sub21_masculino', label: 'Sub 21 - Masculino', idade: 'Até 21 anos', valor: 150 },
-  { value: 'sub21_feminino', label: 'Sub 21 - Feminino', idade: 'Até 21 anos', valor: 150 },
-  { value: 'open_masculino', label: 'Open - Masculino', idade: 'Qualquer idade', valor: 150 },
-  { value: 'open_feminino', label: 'Open - Feminino', idade: 'Qualquer idade', valor: 150 }
-];
-
 const tamanhosCamisa = [
   { value: 'pp', label: 'PP' },
   { value: 'p', label: 'P' },
@@ -145,6 +52,121 @@ const tamanhosCamisa = [
   { value: 'gg', label: 'GG' },
   { value: 'xg', label: 'XG' }
 ];
+
+const api = {
+  
+  async fetchCategorias() {
+    try {
+      const response = await fetch('/api/categorias');
+      if (!response.ok) throw new Error('Erro ao buscar categorias');
+      const data = await response.json();
+      return data.categorias;
+    } catch (error) {
+      console.error('Erro na API de categorias:', error);
+      throw error;
+    }
+  },
+
+  async criarInscricao(formData) {
+    try {
+      const categoriasParaEnviar = formData.categorias.map(cat => {
+        if (typeof cat === 'object') return cat.id;
+        return cat;
+      });
+
+      const payload = {
+        responsavel_nome: formData.responsavel_nome,
+        jogador1_nome: formData.jogador1_nome,
+        jogador1_nascimento: formData.jogador1_nascimento,
+        jogador1_camisa: formData.jogador1_camisa,
+        jogador2_nome: formData.jogador2_nome,
+        jogador2_nascimento: formData.jogador2_nascimento,
+        jogador2_camisa: formData.jogador2_camisa,
+        categorias: categoriasParaEnviar
+      };
+
+      const response = await fetch('/api/inscricao', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || data.errors?.join(', ') || 'Erro ao criar inscrição');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Erro na API de inscrição:', error);
+      throw error;
+    }
+  },
+
+  async uploadFile(codigoRastreio, tipo, file) {
+    try {
+      console.log('=== INICIANDO UPLOAD FRONTEND ===');
+      console.log('codigoRastreio:', codigoRastreio);
+      console.log('tipo:', tipo);
+      console.log('file:', file?.name, file?.size, file?.type);
+      
+      const formData = new FormData();
+      formData.append('codigo_rastreio', codigoRastreio);
+      formData.append('tipo', tipo);
+      formData.append('file', file);
+      
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Response data:', data);
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro no upload');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Erro detalhado no upload:', error);
+      throw error;
+    }
+  },
+
+  async fetchInscricao(codigoRastreio) {
+    try {
+      const response = await fetch(`/api/inscricao/${codigoRastreio}`);
+      if (!response.ok) throw new Error('Erro ao buscar inscrição');
+      const data = await response.json();
+      return data.dupla;
+    } catch (error) {
+      console.error('Erro na API de status:', error);
+      throw error;
+    }
+  },
+
+  async completarInscricao(codigoRastreio) {
+    try {
+      const response = await fetch(`/api/inscricao/${codigoRastreio}/completar`, {
+        method: 'POST'
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao completar inscrição');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Erro na API de completar:', error);
+      throw error;
+    }
+  }
+};
 
 export default function InscricaoPage() {
   const [activeStep, setActiveStep] = useState(0);
@@ -163,6 +185,38 @@ export default function InscricaoPage() {
   const [pagamentoStatus, setPagamentoStatus] = useState('aguardando_pagamento');
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [errosValidacao, setErrosValidacao] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [vagas, setVagas] = useState({});
+
+  // Carregar categorias da API
+  useEffect(() => {
+    const loadCategorias = async () => {
+      try {
+        const categoriasDaAPI = await api.fetchCategorias();
+        setCategorias(categoriasDaAPI);
+        
+        // Inicializar estado de vagas
+        const vagasIniciais = {};
+        categoriasDaAPI.forEach(cat => {
+          vagasIniciais[cat.id] = {
+            total: cat.limite_duplas,
+            ocupadas: cat.duplas_confirmadas + cat.duplas_reservadas,
+            disponiveis: cat.vagas_disponiveis,
+            status: cat.status
+          };
+        });
+        setVagas(vagasIniciais);
+      } catch (error) {
+        setSnackbar({ 
+          open: true, 
+          message: 'Erro ao carregar categorias. Tente novamente.', 
+          severity: 'error' 
+        });
+      }
+    };
+    
+    loadCategorias();
+  }, []);
 
   // Calcular idade dos jogadores
   const idadeJogador1 = calcularIdade(form.jogador1_nascimento);
@@ -173,11 +227,10 @@ export default function InscricaoPage() {
     if (form.categorias.length === 0) return 0;
     
     const valorBase = form.categorias.reduce((total, categoriaId) => {
-      const categoria = categorias.find(c => c.value === categoriaId);
+      const categoria = categorias.find(c => c.id === categoriaId);
       return total + (categoria?.valor || 0);
     }, 0);
     
-    // Aplicar desconto para múltiplas categorias
     if (form.categorias.length > 1) {
       return valorBase * 0.9; // 10% de desconto
     }
@@ -188,29 +241,58 @@ export default function InscricaoPage() {
   const valorTotal = calcularValorTotal();
   const valorFormatado = `R$ ${valorTotal.toFixed(2).replace('.', ',')}`;
 
-  // Validar categorias quando as datas de nascimento ou categorias mudam
+  // Validar idade para uma categoria específica
+  const validarIdadeParaCategoria = (idade, categoria) => {
+    if (idade === null) return { valida: false, motivo: 'Data de nascimento inválida' };
+    
+    if (categoria.nome === 'Open') {
+      return { valida: true };
+    }
+    
+    if (idade > categoria.idade_max) {
+      return { 
+        valida: false, 
+        motivo: `Idade ${idade} anos não permite jogar ${categoria.nome} (máximo ${categoria.idade_max} anos)` 
+      };
+    }
+    
+    return { valida: true };
+  };
+
+  // Validar dupla para múltiplas categorias
   useEffect(() => {
     if (form.jogador1_nascimento && form.jogador2_nascimento && form.categorias.length > 0) {
-      const validacao = validarDuplaParaCategorias(
-        form.jogador1_nascimento,
-        form.jogador2_nascimento,
-        form.categorias
-      );
+      const erros = [];
       
-      // Filtrar apenas os erros
-      const erros = validacao.detalhes
-        .filter(d => !d.valida)
-        .map(d => ({
-          categoria: categorias.find(c => c.value === d.categoria)?.label,
-          jogador1Erro: d.jogador1.motivo,
-          jogador2Erro: d.jogador2.motivo
-        }));
+      form.categorias.forEach(categoriaId => {
+        const categoria = categorias.find(c => c.id === categoriaId);
+        if (categoria) {
+          const validacaoJogador1 = validarIdadeParaCategoria(idadeJogador1, categoria);
+          const validacaoJogador2 = validarIdadeParaCategoria(idadeJogador2, categoria);
+          
+          if (!validacaoJogador1.valida) {
+            erros.push({
+              categoria: `${categoria.nome} ${categoria.sexo}`,
+              jogador1Erro: validacaoJogador1.motivo,
+              jogador2Erro: null
+            });
+          }
+          
+          if (!validacaoJogador2.valida) {
+            erros.push({
+              categoria: `${categoria.nome} ${categoria.sexo}`,
+              jogador1Erro: null,
+              jogador2Erro: validacaoJogador2.motivo
+            });
+          }
+        }
+      });
       
       setErrosValidacao(erros);
     } else {
       setErrosValidacao([]);
     }
-  }, [form.jogador1_nascimento, form.jogador2_nascimento, form.categorias]);
+  }, [form.jogador1_nascimento, form.jogador2_nascimento, form.categorias, categorias]);
 
   // Contador regressivo
   useEffect(() => {
@@ -250,29 +332,45 @@ export default function InscricaoPage() {
     const { value } = event.target;
     const novasCategorias = typeof value === 'string' ? value.split(',') : value;
     
-    // Validar antes de atualizar
+    // Validar idade
     if (form.jogador1_nascimento && form.jogador2_nascimento) {
-      const validacao = validarDuplaParaCategorias(
-        form.jogador1_nascimento,
-        form.jogador2_nascimento,
-        novasCategorias
-      );
-      
-      if (!validacao.valida && novasCategorias.length > 0) {
-        // Mostrar alerta mas permitir seleção (usuário pode corrigir depois)
-        const erros = validacao.detalhes.filter(d => !d.valida);
-        if (erros.length > 0) {
-          const primeiroErro = erros[0];
-          const categoriaNome = categorias.find(c => c.value === primeiroErro.categoria)?.label;
+      novasCategorias.forEach(categoriaId => {
+        const categoria = categorias.find(c => c.id === parseInt(categoriaId));
+        if (categoria) {
+          const validacaoJogador1 = validarIdadeParaCategoria(idadeJogador1, categoria);
+          const validacaoJogador2 = validarIdadeParaCategoria(idadeJogador2, categoria);
           
-          setSnackbar({ 
-            open: true, 
-            message: `⚠️ Atenção: ${primeiroErro.jogador1.motivo || primeiroErro.jogador2.motivo}`,
-            severity: 'warning' 
-          });
+          if (!validacaoJogador1.valida) {
+            setSnackbar({ 
+              open: true, 
+              message: `⚠️ Atenção: ${validacaoJogador1.motivo}`,
+              severity: 'warning' 
+            });
+          }
+          
+          if (!validacaoJogador2.valida) {
+            setSnackbar({ 
+              open: true, 
+              message: `⚠️ Atenção: ${validacaoJogador2.motivo}`,
+              severity: 'warning' 
+            });
+          }
         }
-      }
+      });
     }
+    
+    // Verificar vagas disponíveis
+    novasCategorias.forEach(categoriaId => {
+      const vaga = vagas[categoriaId];
+      if (vaga && vaga.disponiveis === 0) {
+        const categoria = categorias.find(c => c.id === parseInt(categoriaId));
+        setSnackbar({ 
+          open: true, 
+          message: `⚠️ ${categoria?.nome} ${categoria?.sexo} está sem vagas disponíveis!`,
+          severity: 'warning' 
+        });
+      }
+    });
     
     setForm({ ...form, categorias: novasCategorias });
   };
@@ -293,47 +391,97 @@ export default function InscricaoPage() {
     setSnackbar({ open: true, message: 'Copiado!', severity: 'success' });
   };
 
-  // NOVA FUNÇÃO: Verificar se o botão "Próximo" deve ser desabilitado
+  // COMPONENTE: Indicador de Vagas
+  const VagasIndicator = ({ categoriaId }) => {
+    const vaga = vagas[categoriaId];
+    if (!vaga) return null;
+    
+    const percentual = (vaga.ocupadas / vaga.total) * 100;
+    const quaseCheio = vaga.disponiveis <= 3;
+    const esgotado = vaga.disponiveis === 0;
+    
+    return (
+      <Box sx={{ mt: 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+          <Typography variant="caption" color="text.secondary">
+            Vagas:
+          </Typography>
+          <Typography 
+            variant="caption" 
+            fontWeight={600}
+            color={esgotado ? "error" : quaseCheio ? "warning.main" : "success.main"}
+          >
+            {vaga.disponiveis}/{vaga.total} disponíveis
+          </Typography>
+        </Box>
+        
+        <LinearProgress 
+          variant="determinate" 
+          value={percentual} 
+          sx={{ 
+            height: 4, 
+            borderRadius: 2,
+            bgcolor: esgotado ? '#ffcdd2' : '#e0e0e0',
+            '& .MuiLinearProgress-bar': {
+              bgcolor: esgotado ? '#f44336' : quaseCheio ? '#ff9800' : '#4caf50'
+            }
+          }}
+        />
+        
+        {esgotado && (
+          <Chip 
+            label="ESGOTADO" 
+            size="small" 
+            color="error" 
+            sx={{ mt: 0.5, height: 20, fontSize: '0.65rem' }}
+          />
+        )}
+        
+        {quaseCheio && !esgotado && (
+          <Typography variant="caption" color="warning.main" sx={{ display: 'block', mt: 0.5 }}>
+            ⚠️ Últimas vagas!
+          </Typography>
+        )}
+      </Box>
+    );
+  };
+
   const isNextButtonDisabled = () => {
     if (isLoading) return true;
     
     switch(activeStep) {
       case 0:
-        // Verificar campos obrigatórios da etapa 1
         const requiredFields = ['responsavel_nome', 
                               'jogador1_nome', 'jogador1_nascimento', 'jogador1_camisa',
                               'jogador2_nome', 'jogador2_nascimento', 'jogador2_camisa'];
         
-        // 1. Verificar se todos os campos obrigatórios estão preenchidos
         const camposPreenchidos = requiredFields.every(field => form[field]);
         if (!camposPreenchidos) return true;
         
-        // 2. Verificar se pelo menos uma categoria foi selecionada
         if (form.categorias.length === 0) return true;
         
-        // 3. Verificar validação de idade das categorias
         if (form.jogador1_nascimento && form.jogador2_nascimento) {
-          const validacao = validarDuplaParaCategorias(
-            form.jogador1_nascimento,
-            form.jogador2_nascimento,
-            form.categorias
-          );
+          // Verificar se há erros de validação
+          if (errosValidacao.length > 0) return true;
           
-          if (!validacao.valida) return true;
+          // Verificar vagas disponíveis
+          const temVagas = form.categorias.every(categoriaId => {
+            const vaga = vagas[categoriaId];
+            return vaga && vaga.disponiveis > 0;
+          });
+          
+          if (!temVagas) return true;
         }
         
         return false;
         
       case 1:
-        // Etapa 2: Verificar se ambos os documentos foram anexados
         return !files.documento_jogador1 || !files.documento_jogador2;
         
       case 2:
-        // Etapa 3: Verificar se o comprovante foi anexado
         return !comprovanteFile;
         
       case 3:
-        // Etapa 4: Botão sempre habilitado (é o "Finalizar")
         return false;
         
       default:
@@ -347,37 +495,44 @@ export default function InscricaoPage() {
                             'jogador1_nome', 'jogador1_nascimento', 'jogador1_camisa',
                             'jogador2_nome', 'jogador2_nascimento', 'jogador2_camisa'];
       
-      // Verificar se pelo menos uma categoria foi selecionada
       if (form.categorias.length === 0) {
         setSnackbar({ open: true, message: 'Selecione pelo menos uma categoria.', severity: 'error' });
         return;
       }
       
-      // Validar idade das categorias selecionadas
-      if (form.jogador1_nascimento && form.jogador2_nascimento) {
-        const validacao = validarDuplaParaCategorias(
-          form.jogador1_nascimento,
-          form.jogador2_nascimento,
-          form.categorias
-        );
-        
-        if (!validacao.valida) {
-          const primeiroErro = validacao.detalhes.find(d => !d.valida);
-          const categoriaNome = categorias.find(c => c.value === primeiroErro.categoria)?.label;
-          
-          setSnackbar({ 
-            open: true, 
-            message: `❌ Não é possível se inscrever na categoria ${categoriaNome}. ${primeiroErro.jogador1.motivo || primeiroErro.jogador2.motivo}`,
-            severity: 'error' 
-          });
-          return;
-        }
+      // Verificar erros de idade
+      if (errosValidacao.length > 0) {
+        const primeiroErro = errosValidacao[0];
+        setSnackbar({ 
+          open: true, 
+          message: `❌ Não é possível se inscrever na categoria ${primeiroErro.categoria}. ${primeiroErro.jogador1Erro || primeiroErro.jogador2Erro}`,
+          severity: 'error' 
+        });
+        return;
+      }
+      
+      // Verificar vagas disponíveis
+      const categoriasSemVaga = form.categorias.filter(categoriaId => {
+        const vaga = vagas[categoriaId];
+        return !vaga || vaga.disponiveis === 0;
+      });
+      
+      if (categoriasSemVaga.length > 0) {
+        const primeiraSemVagaId = categoriasSemVaga[0];
+        const categoria = categorias.find(c => c.id === parseInt(primeiraSemVagaId));
+        setSnackbar({ 
+          open: true, 
+          message: `❌ ${categoria?.nome} ${categoria?.sexo} está sem vagas disponíveis!`,
+          severity: 'error' 
+        });
+        return;
       }
       
       if (!requiredFields.every(field => form[field])) {
         setSnackbar({ open: true, message: 'Preencha todos os campos.', severity: 'error' });
         return;
       }
+      
       setActiveStep(1);
     }
     
@@ -386,27 +541,74 @@ export default function InscricaoPage() {
         setSnackbar({ open: true, message: 'Anexe os documentos.', severity: 'error' });
         return;
       }
+      
       setIsLoading(true);
       try {
-        const dadosInscricao = {
-          ...form,
-          valor_total: valorTotal,
-          categorias_selecionadas: form.categorias.map(catId => {
-            const cat = categorias.find(c => c.value === catId);
-            return { id: catId, nome: cat?.label, valor: cat?.valor };
-          })
-        };
+        // Criar inscrição na API
+        const response = await api.criarInscricao(form);
         
-        const response = await saveToDatabase(dadosInscricao);
         if (response.success) {
           setInscricaoData(response);
-          setTimeLeft(calculateTimeLeft(response.expira_em));
+          
+          // Calcular tempo restante
+          if (response.expira_em) {
+            const expiraEm = new Date(response.expira_em).getTime();
+            setTimeLeft(calculateTimeLeft(expiraEm));
+          }
+          
           setPagamentoStatus('aguardando_pagamento');
-          setSnackbar({ open: true, message: '✅ Inscrição salva!', severity: 'success' });
+          setSnackbar({ 
+            open: true, 
+            message: '✅ Inscrição criada com sucesso! Vagas reservadas por 30 minutos.', 
+            severity: 'success' 
+          });
+          
+          // Atualizar vagas localmente
+          const novasVagas = { ...vagas };
+          form.categorias.forEach(categoriaId => {
+            if (novasVagas[categoriaId]) {
+              novasVagas[categoriaId].ocupadas += 1;
+              novasVagas[categoriaId].disponiveis = Math.max(0, novasVagas[categoriaId].disponiveis - 1);
+            }
+          });
+          setVagas(novasVagas);
+          
+          // AGORA FAZ O UPLOAD DOS DOCUMENTOS AQUI MESMO
+          console.log('=== UPLOAD DOS DOCUMENTOS NA ETAPA 1 ===');
+          
+          // 1. Upload dos documentos dos jogadores
+          if (files.documento_jogador1) {
+            console.log('Upload documento jogador1...');
+            await api.uploadFile(
+              response.codigo_rastreio, 
+              'documento_jogador1', 
+              files.documento_jogador1
+            );
+          }
+          
+          if (files.documento_jogador2) {
+            console.log('Upload documento jogador2...');
+            await api.uploadFile(
+              response.codigo_rastreio, 
+              'documento_jogador2', 
+              files.documento_jogador2
+            );
+          }
+          
+          setSnackbar({ 
+            open: true, 
+            message: '✅ Documentos enviados com sucesso! Prossiga para o pagamento.', 
+            severity: 'success' 
+          });
+          
           setActiveStep(2);
         }
-      } catch {
-        setSnackbar({ open: true, message: 'Erro ao salvar.', severity: 'error' });
+      } catch (error) {
+        setSnackbar({ 
+          open: true, 
+          message: error.message || 'Erro ao criar inscrição ou enviar documentos', 
+          severity: 'error' 
+        });
       } finally {
         setIsLoading(false);
       }
@@ -417,16 +619,42 @@ export default function InscricaoPage() {
         setSnackbar({ open: true, message: 'Anexe o comprovante.', severity: 'error' });
         return;
       }
+      
+      if (!inscricaoData?.codigo_rastreio) {
+        setSnackbar({ open: true, message: 'Código de rastreio não encontrado.', severity: 'error' });
+        return;
+      }
+      
       setIsLoading(true);
       try {
-        const response = await sendComprovante();
+        console.log('=== UPLOAD DO COMPROVANTE NA ETAPA 2 ===');
+        
+        // Apenas upload do comprovante (documentos já foram enviados)
+        console.log('Upload comprovante...');
+        await api.uploadFile(
+          inscricaoData.codigo_rastreio, 
+          'comprovante', 
+          comprovanteFile
+        );
+        
+        // Completar inscrição
+        const response = await api.completarInscricao(inscricaoData.codigo_rastreio);
+        
         if (response.success) {
           setPagamentoStatus('pendente');
-          setSnackbar({ open: true, message: '✅ Comprovante enviado!', severity: 'success' });
+          setSnackbar({ 
+            open: true, 
+            message: '✅ Inscrição completada com sucesso! Aguarde a confirmação.', 
+            severity: 'success' 
+          });
           setActiveStep(3);
         }
-      } catch {
-        setSnackbar({ open: true, message: 'Erro ao enviar.', severity: 'error' });
+      } catch (error) {
+        setSnackbar({ 
+          open: true, 
+          message: error.message || 'Erro ao enviar comprovante', 
+          severity: 'error' 
+        });
       } finally {
         setIsLoading(false);
       }
@@ -434,7 +662,9 @@ export default function InscricaoPage() {
   };
 
   const handleBack = () => {
-    if (activeStep > 0) setActiveStep(prev => prev - 1);
+    if (activeStep > 0) {
+      setActiveStep(prev => prev - 1);
+    }
   };
 
   const handleCloseSnackbar = (_, reason) => {
@@ -517,160 +747,6 @@ export default function InscricaoPage() {
                   </Alert>
                 )}
 
-                {/* MUDANÇA: Seleção múltipla de categorias COM VALIDAÇÃO */}
-                <FormControl fullWidth sx={{ mb: 3 }}>
-                  <InputLabel>Categorias</InputLabel>
-                  <Select
-                    multiple
-                    name="categorias"
-                    value={form.categorias}
-                    onChange={handleCategoriasChange}
-                    label="Categorias"
-                    renderValue={(selected) => (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {selected.map((value) => {
-                          const categoria = categorias.find(c => c.value === value);
-                          const temErro = errosValidacao.some(e => 
-                            categorias.find(c => c.value === value)?.label === e.categoria
-                          );
-                          
-                          return (
-                            <Chip 
-                              key={value} 
-                              label={categoria?.label} 
-                              size="small"
-                              color={temErro ? "error" : "primary"}
-                              icon={temErro ? <Warning fontSize="small" /> : undefined}
-                            />
-                          );
-                        })}
-                      </Box>
-                    )}
-                  >
-                    {categorias.map((cat) => {
-                      // Verificar se esta categoria seria válida para ambos os jogadores
-                      let validaParaJogador1 = true;
-                      let validaParaJogador2 = true;
-                      let motivoJogador1 = '';
-                      let motivoJogador2 = '';
-                      
-                      if (form.jogador1_nascimento) {
-                        const validacao = validarCategoriaPorIdade(idadeJogador1, cat.value);
-                        validaParaJogador1 = validacao.valida;
-                        motivoJogador1 = validacao.motivo;
-                      }
-                      
-                      if (form.jogador2_nascimento) {
-                        const validacao = validarCategoriaPorIdade(idadeJogador2, cat.value);
-                        validaParaJogador2 = validacao.valida;
-                        motivoJogador2 = validacao.motivo;
-                      }
-                      
-                      const categoriaValida = validaParaJogador1 && validaParaJogador2;
-                      // CORREÇÃO: Open NUNCA é desabilitada pois aceita qualquer idade
-                      const disabled = !categoriaValida && 
-                                      (form.jogador1_nascimento && form.jogador2_nascimento) &&
-                                      !cat.value.includes('open'); // Open nunca é desabilitada
-                      
-                      return (
-                        <MenuItem 
-                          key={cat.value} 
-                          value={cat.value}
-                          disabled={disabled}
-                          sx={{ 
-                            opacity: disabled ? 0.6 : 1,
-                            bgcolor: disabled ? '#f5f5f5' : 'transparent'
-                          }}
-                        >
-                          <Checkbox checked={form.categorias.indexOf(cat.value) > -1} />
-                          <ListItemText 
-                            primary={
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Typography>{cat.label}</Typography>
-                                {disabled && <Warning color="error" fontSize="small" />}
-                              </Box>
-                            }
-                            secondary={
-                              <Box>
-                                <Typography variant="caption" color="text.secondary">
-                                  {cat.idade}
-                                </Typography>
-                                <Typography variant="caption" color="primary" sx={{ display: 'block', fontWeight: 600 }}>
-                                  R$ {cat.valor.toFixed(2).replace('.', ',')}
-                                </Typography>
-                                {disabled && (
-                                  <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>
-                                    {!validaParaJogador1 ? `Jogador 1: ${motivoJogador1}` : `Jogador 2: ${motivoJogador2}`}
-                                  </Typography>
-                                )}
-                              </Box>
-                            } 
-                          />
-                        </MenuItem>
-                      );
-                    })}
-                  </Select>
-                  {form.categorias.length === 0 && (
-                    <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
-                      Selecione pelo menos uma categoria
-                    </Typography>
-                  )}
-                </FormControl>
-
-                {/* RESUMO DA SELEÇÃO DE CATEGORIAS */}
-                {form.categorias.length > 0 && (
-                  <Card variant="outlined" sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5' }}>
-                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                      Resumo das Categorias Selecionadas:
-                    </Typography>
-                    <Box sx={{ mt: 1 }}>
-                      {form.categorias.map(catId => {
-                        const cat = categorias.find(c => c.value === catId);
-                        const temErro = errosValidacao.some(e => cat?.label === e.categoria);
-                        
-                        return cat ? (
-                          <Box key={catId} sx={{ mb: 1, p: 1, borderRadius: 1, bgcolor: temErro ? '#ffebee' : 'transparent' }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                              <Typography variant="body2" fontWeight={600} color={temErro ? 'error' : 'inherit'}>
-                                {cat.label} {temErro && <Warning fontSize="small" sx={{ ml: 0.5, verticalAlign: 'middle' }} />}
-                              </Typography>
-                              <Typography variant="body2" fontWeight={600}>
-                                R$ {cat.valor.toFixed(2).replace('.', ',')}
-                              </Typography>
-                            </Box>
-                            {temErro && errosValidacao.find(e => e.categoria === cat.label) && (
-                              <Alert severity="error" sx={{ py: 0, my: 0.5 }}>
-                                <Typography variant="caption">
-                                  {errosValidacao.find(e => e.categoria === cat.label)?.jogador1Erro || 
-                                   errosValidacao.find(e => e.categoria === cat.label)?.jogador2Erro}
-                                </Typography>
-                              </Alert>
-                            )}
-                          </Box>
-                        ) : null;
-                      })}
-                      {form.categorias.length > 1 && (
-                        <>
-                          <Divider sx={{ my: 1 }} />
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Typography variant="body2">Desconto (10%)</Typography>
-                            <Typography variant="body2" color="success.main" fontWeight={600}>
-                              - R$ {(calcularValorTotal() * 0.1111).toFixed(2).replace('.', ',')}
-                            </Typography>
-                          </Box>
-                        </>
-                      )}
-                      <Divider sx={{ my: 1 }} />
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="subtitle1" fontWeight={600}>Total</Typography>
-                        <Typography variant="h6" color="primary" fontWeight={700}>
-                          {valorFormatado}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Card>
-                )}
-
                 {/* Jogador 1 */}
                 <Card variant="outlined" sx={{ mb: 3, p: 2 }}>
                   <Typography variant="subtitle1" color="primary" fontWeight={600} gutterBottom>
@@ -725,7 +801,7 @@ export default function InscricaoPage() {
                 </Card>
 
                 {/* Jogador 2 */}
-                <Card variant="outlined" sx={{ p: 2 }}>
+                <Card variant="outlined" sx={{ mb: 3, p: 2 }}>
                   <Typography variant="subtitle1" color="primary" fontWeight={600} gutterBottom>
                     Jogador 2
                   </Typography>
@@ -776,6 +852,266 @@ export default function InscricaoPage() {
                     </FormControl>
                   </Stack>
                 </Card>
+
+                {/* SELEÇÃO DE CATEGORIAS */}
+                <FormControl fullWidth sx={{ mb: 3 }}>
+                  <InputLabel>Categorias</InputLabel>
+                  <Select
+                    multiple
+                    name="categorias"
+                    value={form.categorias}
+                    onChange={handleCategoriasChange}
+                    label="Categorias"
+                    renderValue={(selected) => (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {selected.map((categoriaId) => {
+                          const categoria = categorias.find(c => c.id === parseInt(categoriaId));
+                          const temErro = errosValidacao.some(e => e.categoria === `${categoria?.nome} ${categoria?.sexo}`);
+                          const vaga = vagas[categoriaId];
+                          const semVaga = vaga && vaga.disponiveis === 0;
+                          
+                          return categoria ? (
+                            <Chip 
+                              key={categoriaId} 
+                              label={`${categoria.nome} ${categoria.sexo}`} 
+                              size="small"
+                              color={semVaga ? "error" : temErro ? "warning" : "primary"}
+                              icon={semVaga ? <PeopleOutline /> : temErro ? <Warning /> : undefined}
+                            />
+                          ) : null;
+                        })}
+                      </Box>
+                    )}
+                  >
+                    {categorias.map((cat) => {
+                      // Verificar idade
+                      let validaParaJogador1 = true;
+                      let validaParaJogador2 = true;
+                      let motivoJogador1 = '';
+                      let motivoJogador2 = '';
+                      
+                      if (form.jogador1_nascimento) {
+                        const validacao = validarIdadeParaCategoria(idadeJogador1, cat);
+                        validaParaJogador1 = validacao.valida;
+                        motivoJogador1 = validacao.motivo;
+                      }
+                      
+                      if (form.jogador2_nascimento) {
+                        const validacao = validarIdadeParaCategoria(idadeJogador2, cat);
+                        validaParaJogador2 = validacao.valida;
+                        motivoJogador2 = validacao.motivo;
+                      }
+                      
+                      const categoriaValida = validaParaJogador1 && validaParaJogador2;
+                      const vaga = vagas[cat.id];
+                      const temVaga = vaga && vaga.disponiveis > 0;
+                      
+                      // Open nunca é desabilitada por idade
+                      const disabledPorIdade = !categoriaValida && cat.nome !== 'Open';
+                      const disabled = disabledPorIdade || !temVaga;
+                      
+                      return (
+                        <MenuItem 
+                          key={cat.id} 
+                          value={cat.id}
+                          disabled={disabled}
+                          sx={{ 
+                            opacity: disabled ? 0.6 : 1,
+                            bgcolor: disabled ? '#f5f5f5' : 'transparent'
+                          }}
+                        >
+                          <Checkbox checked={form.categorias.includes(cat.id.toString())} />
+                          <ListItemText 
+                            primaryTypographyProps={{ component: 'div' }}
+                            secondaryTypographyProps={{ component: 'div' }}
+                            primary={
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Typography component="span">{cat.nome} {cat.sexo}</Typography>
+                                {!temVaga && <PeopleOutline color="error" fontSize="small" />}
+                                {disabledPorIdade && cat.nome !== 'Open' && <Warning color="error" fontSize="small" />}
+                              </Box>
+                            }
+                            secondary={
+                              <Box>
+                                <Typography variant="caption" color="text.secondary" component="span">
+                                  {cat.idade_max ? `Até ${cat.idade_max} anos` : 'Qualquer idade'}
+                                </Typography>
+                                <Typography variant="caption" color="primary" sx={{ display: 'block', fontWeight: 600 }} component="span">
+                                  R$ {cat.valor.toFixed(2).replace('.', ',')}
+                                </Typography>
+                                
+                                {/* INDICADOR DE VAGAS */}
+                                <VagasIndicator categoriaId={cat.id} />
+                                
+                                {/* MENSAGENS DE ERRO */}
+                                {disabledPorIdade && (
+                                  <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }} component="span">
+                                    {!validaParaJogador1 ? `Jogador 1: ${motivoJogador1}` : `Jogador 2: ${motivoJogador2}`}
+                                  </Typography>
+                                )}
+                                
+                                {!temVaga && (
+                                  <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }} component="span">
+                                    ❌ Sem vagas disponíveis
+                                  </Typography>
+                                )}
+                              </Box>
+                            } 
+                          />
+                        </MenuItem>
+                      );
+                    })}
+                  </Select>
+                  {form.categorias.length === 0 && (
+                    <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
+                      Selecione pelo menos uma categoria
+                    </Typography>
+                  )}
+                </FormControl>
+
+                {/* RESUMO DE VAGAS DISPONÍVEIS */}
+                {form.categorias.length > 0 && (
+                  <Card variant="outlined" sx={{ mb: 3, p: 2, bgcolor: '#fff8e1', borderColor: '#ffb300' }}>
+                    <Typography variant="subtitle2" color="#ff9800" gutterBottom fontWeight={600}>
+                      <People sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} />
+                      Vagas Disponíveis nas Categorias Selecionadas
+                    </Typography>
+                    <Grid container spacing={1} sx={{ mt: 1 }}>
+                      {form.categorias.map(categoriaId => {
+                        const vaga = vagas[categoriaId];
+                        const categoria = categorias.find(c => c.id === parseInt(categoriaId));
+                        const disponivel = vaga && vaga.disponiveis > 0;
+                        
+                        return categoria ? (
+                          <Grid item xs={6} sm={4} key={categoriaId}>
+                            <Box sx={{ 
+                              p: 1.5, 
+                              bgcolor: disponivel ? '#e8f5e9' : '#ffebee',
+                              borderRadius: 1,
+                              border: `1px solid ${disponivel ? '#4caf50' : '#f44336'}`
+                            }}>
+                              <Typography variant="caption" fontWeight={600} sx={{ display: 'block', mb: 0.5 }}>
+                                {categoria.nome} {categoria.sexo}
+                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Typography variant="caption" color={disponivel ? "success.main" : "error"}>
+                                  {disponivel ? `${vaga.disponiveis} vaga(s)` : 'ESGOTADO'}
+                                </Typography>
+                                {disponivel ? (
+                                  <CheckCircle sx={{ fontSize: 14, color: '#4caf50' }} />
+                                ) : (
+                                  <Warning sx={{ fontSize: 14, color: '#f44336' }} />
+                                )}
+                              </Box>
+                            </Box>
+                          </Grid>
+                        ) : null;
+                      })}
+                    </Grid>
+                  </Card>
+                )}
+
+                {/* RESUMO DA SELEÇÃO DE CATEGORIAS */}
+                {form.categorias.length > 0 && (
+                  <Card variant="outlined" sx={{ p: 2, bgcolor: '#f5f5f5' }}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      Resumo das Categorias Selecionadas:
+                    </Typography>
+                    <Box sx={{ mt: 1 }}>
+                      {form.categorias.map(categoriaId => {
+                        const cat = categorias.find(c => c.id === parseInt(categoriaId));
+                        const temErro = errosValidacao.some(e => e.categoria === `${cat?.nome} ${cat?.sexo}`);
+                        const vaga = vagas[categoriaId];
+                        const disponivel = vaga && vaga.disponiveis > 0;
+                        
+                        return cat ? (
+                          <Box key={categoriaId} sx={{ 
+                            mb: 1, 
+                            p: 1.5, 
+                            borderRadius: 1, 
+                            bgcolor: !disponivel ? '#ffebee' : temErro ? '#fff3e0' : 'transparent',
+                            border: `1px solid ${!disponivel ? '#f44336' : temErro ? '#ff9800' : '#e0e0e0'}`
+                          }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                              <Box>
+                                <Typography variant="body2" fontWeight={600} color={!disponivel ? 'error' : temErro ? 'warning.main' : 'inherit'}>
+                                  {cat.nome} {cat.sexo}
+                                  {!disponivel && <Warning fontSize="small" sx={{ ml: 0.5, verticalAlign: 'middle' }} />}
+                                  {temErro && disponivel && <Warning fontSize="small" sx={{ ml: 0.5, verticalAlign: 'middle' }} />}
+                                </Typography>
+                                {vaga && (
+                                  <Typography variant="caption" color={!disponivel ? "error" : "text.secondary"}>
+                                    Vagas: {vaga.disponiveis}/{vaga.total} disponíveis
+                                  </Typography>
+                                )}
+                              </Box>
+                              <Typography variant="body2" fontWeight={600}>
+                                R$ {cat.valor.toFixed(2).replace('.', ',')}
+                              </Typography>
+                            </Box>
+                            
+                            {temErro && disponivel && (
+                              <Alert severity="warning" sx={{ py: 0.5, my: 0.5 }}>
+                                <Typography variant="caption">
+                                  {errosValidacao.find(e => e.categoria === `${cat.nome} ${cat.sexo}`)?.jogador1Erro || 
+                                   errosValidacao.find(e => e.categoria === `${cat.nome} ${cat.sexo}`)?.jogador2Erro}
+                                </Typography>
+                              </Alert>
+                            )}
+                            
+                            {!disponivel && (
+                              <Alert severity="error" sx={{ py: 0.5, my: 0.5 }}>
+                                <Typography variant="caption">
+                                  ❌ Esta categoria está sem vagas disponíveis
+                                </Typography>
+                              </Alert>
+                            )}
+                          </Box>
+                        ) : null;
+                      })}
+                      
+                      {/* RESUMO FINANCEIRO */}
+                      {form.categorias.every(categoriaId => {
+                        const vaga = vagas[categoriaId];
+                        return vaga && vaga.disponiveis > 0;
+                      }) && (
+                        <>
+                          {form.categorias.length > 1 && (
+                            <>
+                              <Divider sx={{ my: 1 }} />
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="body2">Desconto (10%)</Typography>
+                                <Typography variant="body2" color="success.main" fontWeight={600}>
+                                  - R$ {(calcularValorTotal() * 0.1111).toFixed(2).replace('.', ',')}
+                                </Typography>
+                              </Box>
+                            </>
+                          )}
+                          <Divider sx={{ my: 1 }} />
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography variant="subtitle1" fontWeight={600}>Total</Typography>
+                            <Typography variant="h6" color="primary" fontWeight={700}>
+                              {valorFormatado}
+                            </Typography>
+                          </Box>
+                        </>
+                      )}
+                      
+                      {/* ALERTA SE ALGUMA CATEGORIA ESTÁ SEM VAGA */}
+                      {form.categorias.some(categoriaId => {
+                        const vaga = vagas[categoriaId];
+                        return vaga && vaga.disponiveis === 0;
+                      }) && (
+                        <Alert severity="error" sx={{ mt: 2 }}>
+                          <Typography variant="body2">
+                            ❌ Uma ou mais categorias selecionadas estão sem vagas. 
+                            Remova as categorias esgotadas para prosseguir.
+                          </Typography>
+                        </Alert>
+                      )}
+                    </Box>
+                  </Card>
+                )}
               </CardContent>
             </Card>
           </Box>
@@ -789,6 +1125,10 @@ export default function InscricaoPage() {
                 <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}><AttachFile /></Avatar>
                 <Typography variant="h6" fontWeight={600}>Documentação Obrigatória</Typography>
               </Box>
+              
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                Após preencher os dados, anexe os documentos dos jogadores para reservar as vagas.
+              </Typography>
               
               <Box sx={{ 
                 display: 'flex', 
@@ -813,7 +1153,7 @@ export default function InscricaoPage() {
                       </Box>
                       
                       <Typography variant="body2" color="text.secondary" paragraph>
-                        Anexe documento que comprove a idade (RG, CNH ou Certidão de Nascimento)
+                        Anexe um documento com foto que comprove a idade (RG, CNH) OBS: Deve ser legível
                       </Typography>
                       
                       <Button 
@@ -894,14 +1234,35 @@ export default function InscricaoPage() {
                         </CardContent>
                       </Card>
 
-                      {/* ALERTA DE TEMPO */}
+                      {/* ALERTA DE TEMPO E VAGAS */}
                       <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
-                        <Typography variant="subtitle1" fontWeight={600}>
-                          ⚠️ PAGUE EM ATÉ {timeLeft ? formatTime(timeLeft) : '30:00'}
-                        </Typography>
-                        <Typography variant="body2">
-                          Sua vaga está reservada por 30 minutos. Após este período, sua inscrição será cancelada automaticamente.
-                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                          <HourglassEmpty sx={{ fontSize: 40, flexShrink: 0 }} />
+                          <Box>
+                            <Typography variant="subtitle1" fontWeight={600}>
+                              ⚠️ PAGUE EM ATÉ {timeLeft ? formatTime(timeLeft) : '30:00'}
+                            </Typography>
+                            <Typography variant="body2">
+                              Suas vagas estão <strong>reservadas temporariamente</strong>. 
+                              Após 30 minutos sem pagamento, as vagas serão liberadas para outras duplas.
+                            </Typography>
+                            <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                              {form.categorias.map(categoriaId => {
+                                const categoria = categorias.find(c => c.id === parseInt(categoriaId));
+                                const vaga = vagas[categoriaId];
+                                return categoria && vaga ? (
+                                  <Chip 
+                                    key={categoriaId}
+                                    label={`${categoria.nome} ${categoria.sexo}: ${vaga.disponiveis}/${vaga.total}`}
+                                    size="small"
+                                    color="primary"
+                                    variant="outlined"
+                                  />
+                                ) : null;
+                              })}
+                            </Box>
+                          </Box>
+                        </Box>
                       </Alert>
 
                       {/* LINHA DE PROGRESSO */}
@@ -937,13 +1298,14 @@ export default function InscricaoPage() {
                             Categorias ({form.categorias.length})
                           </Typography>
                           <Box sx={{ maxHeight: 100, overflowY: 'auto' }}>
-                            {form.categorias.map(catId => {
-                              const cat = categorias.find(c => c.value === catId);
-                              return (
-                                <Typography key={catId} variant="body2" sx={{ mb: 0.5 }}>
-                                  • {cat?.label}
+                            {form.categorias.map(categoriaId => {
+                              const categoria = categorias.find(c => c.id === parseInt(categoriaId));
+                              const vaga = vagas[categoriaId];
+                              return categoria ? (
+                                <Typography key={categoriaId} variant="body2" sx={{ mb: 0.5 }}>
+                                  • {categoria.nome} {categoria.sexo} {vaga && `(${vaga.disponiveis} vaga${vaga.disponiveis !== 1 ? 's' : ''} disponível${vaga.disponiveis !== 1 ? 'is' : ''})`}
                                 </Typography>
-                              );
+                              ) : null;
                             })}
                           </Box>
                         </Card>
@@ -955,7 +1317,7 @@ export default function InscricaoPage() {
                           Comprovante de Pagamento
                         </Typography>
                         <Typography variant="body2" color="text.secondary" paragraph>
-                          Após realizar o pagamento via PIX, anexe o comprovante abaixo.
+                          Após realizar o pagamento via PIX, anexe o comprovante abaixo para confirmar suas vagas.
                         </Typography>
                         <Button 
                           variant="outlined" 
@@ -984,7 +1346,7 @@ export default function InscricaoPage() {
                         {!comprovanteFile && (
                           <Alert severity="error" sx={{ mt: 2 }}>
                             <Typography variant="body2">
-                              É obrigatório anexar o comprovante de pagamento
+                              É obrigatório anexar o comprovante de pagamento para confirmar as vagas
                             </Typography>
                           </Alert>
                         )}
@@ -1131,7 +1493,7 @@ export default function InscricaoPage() {
               }}>
                 <CardContent sx={{ py: 3, textAlign: 'center' }}>
                   <Typography variant="h5" color="white" gutterBottom fontWeight={700}>
-                    CÓDIGO DE RASTREIO
+                    CÓDIGO DE INSCRIÇÃO
                   </Typography>
                   <Typography variant="h2" fontWeight={900} color="white" sx={{ mb: 2, letterSpacing: 2 }}>
                     {inscricaoData?.codigo_rastreio}
@@ -1190,13 +1552,21 @@ export default function InscricaoPage() {
                     <Box>
                       <Typography variant="caption" color="text.secondary">Categorias ({form.categorias.length}):</Typography>
                       <Box sx={{ maxHeight: 80, overflowY: 'auto', mt: 0.5 }}>
-                        {form.categorias.map(catId => {
-                          const cat = categorias.find(c => c.value === catId);
-                          return (
-                            <Typography key={catId} variant="body2" sx={{ mb: 0.5 }}>
-                              • {cat?.label}
-                            </Typography>
-                          );
+                        {form.categorias.map(categoriaId => {
+                          const categoria = categorias.find(c => c.id === parseInt(categoriaId));
+                          const vaga = vagas[categoriaId];
+                          return categoria ? (
+                            <Box key={categoriaId} sx={{ mb: 1 }}>
+                              <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                • {categoria.nome} {categoria.sexo}
+                              </Typography>
+                              {vaga && (
+                                <Typography variant="caption" color="text.secondary">
+                                  Vagas: {vaga.disponiveis}/{vaga.total} disponíveis
+                                </Typography>
+                              )}
+                            </Box>
+                          ) : null;
                         })}
                       </Box>
                     </Box>
@@ -1250,9 +1620,9 @@ export default function InscricaoPage() {
           <Button 
             variant="contained" 
             onClick={handleNext}
-            disabled={isNextButtonDisabled()} // USANDO A NOVA FUNÇÃO
+            disabled={isNextButtonDisabled()}
           >
-            {isLoading ? 'Processando...' : activeStep === steps.length - 1 ? 'Finalizar' : activeStep === 1 ? 'Salvar' : activeStep === 2 ? 'Enviar' : 'Próximo'}
+            {isLoading ? 'Processando...' : activeStep === steps.length - 1 ? 'Finalizar' : activeStep === 1 ? 'Salvar e Reservar Vagas' : activeStep === 2 ? 'Enviar Comprovante' : 'Próximo'}
           </Button>
         </Box>
       </Paper>
