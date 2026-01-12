@@ -684,6 +684,9 @@ const AdminInscricoes = () => {
                     {selectedInscricao.jogador1?.nome || 'N/A'}
                   </Typography>
                   <Stack spacing={1}>
+                      <Typography variant="body2">
+                        <strong>Data de Nascimento:</strong> {formatDate(selectedInscricao.jogador1?.nascimento)}
+                      </Typography>
                     <Typography variant="body2">
                       <strong>Idade:</strong> {selectedInscricao.jogador1?.idade || 'N/A'} anos
                     </Typography>
@@ -702,6 +705,9 @@ const AdminInscricoes = () => {
                     {selectedInscricao.jogador2?.nome || 'N/A'}
                   </Typography>
                   <Stack spacing={1}>
+                    <Typography variant="body2">
+                        <strong>Data de Nascimento:</strong> {formatDate(selectedInscricao.jogador2?.nascimento)}
+                      </Typography>
                     <Typography variant="body2">
                       <strong>Idade:</strong> {selectedInscricao.jogador2?.idade || 'N/A'} anos
                     </Typography>
