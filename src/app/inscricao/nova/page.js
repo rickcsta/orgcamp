@@ -17,6 +17,8 @@ import {
   Warning, People, PeopleOutline, HourglassEmpty
 } from '@mui/icons-material';
 
+
+
 const formatPhone = (value) => {
   if (!value) return '';
 
@@ -203,6 +205,25 @@ export default function InscricaoPage() {
     jogador2_nome: '', jogador2_nascimento: '', jogador2_camisa: ''
   });
   
+
+  function useWindowWidth() {
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    // Só roda no browser
+    setWidth(window.innerWidth);
+
+    const handleResize = () => setWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return width;
+}
+
+const width = useWindowWidth();
+
 
   const router = useRouter();
 
@@ -2070,13 +2091,7 @@ const handleFileChange = (e, fileType) => {
           }}
         >
           {/* Texto responsivo para botão Voltar */}
-          {(() => {
-            if (window.innerWidth > 600) {
-             return 'Voltar';
-            } else {
-              return 'Voltar';
-            }
-          })()}
+           {width > 600 ? 'Voltar' : 'Voltar'} 
         </Button>
       )}
 
@@ -2100,19 +2115,20 @@ const handleFileChange = (e, fileType) => {
           order: { xs: -1, sm: 0 }
         }}
       >
-        {isLoading ? (
-          'Processando...'
-        ) : activeStep === steps.length - 1 ? (
-          'Finalizar'
-        ) : activeStep === 1 ? (
-          // Texto responsivo para etapa 1
-          <>{window.innerWidth < 600 ? 'Reservar Vagas' : 'Salvar e Reservar Vagas'}</>
-        ) : activeStep === 2 ? (
-          // Texto responsivo para etapa 2
-          <>{window.innerWidth < 600 ? 'Enviar' : 'Enviar Comprovante'}</>
-        ) : (
-          'Próximo'
-        )}
+        
+        {isLoading
+          ? 'Processando...'
+          : activeStep === steps.length - 1
+          ? 'Finalizar'
+          : activeStep === 1
+          ? width < 600
+            ? 'Reservar Vagas'
+            : 'Salvar e Reservar Vagas'
+          : activeStep === 2
+          ? width < 600
+            ? 'Enviar'
+            : 'Enviar Comprovante'
+          : 'Próximo'}
       </Button>
     </Box>
   </Paper>
