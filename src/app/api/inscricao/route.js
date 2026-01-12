@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { limparDuplasExpiradas } from '@/lib/limparDuplasExpiradas';
 
 // Função para gerar código de 6 dígitos
 function gerarCodigo6Digitos() {
-  // Gera número entre 100000 e 999999 (6 dígitos)
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Funções auxiliares
 function calcularIdade(dataNascimento) {
   if (!dataNascimento) return null;
   
@@ -28,15 +27,18 @@ function calcularIdade(dataNascimento) {
 
 function validarIdadeParaCategoria(idade, categoria) {
   if (categoria.nome === 'Open') return true;
-  
   if (categoria.idade_max === null) return true;
-  
   return idade <= categoria.idade_max;
 }
 
 export async function POST(request) {
   try {
     console.log('=== CRIANDO INSCRIÇÃO ===');
+
+    // Limpeza on-demand antes de processar nova inscrição
+    const canceladas = await limparDuplasExpiradas();
+    console.log(`Limpeza on-demand: ${canceladas} duplas expiradas canceladas`);
+    
     const data = await request.json();
     console.log('Dados recebidos:', data);
 

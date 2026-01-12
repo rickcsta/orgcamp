@@ -233,6 +233,59 @@ const AdminInscricoes = () => {
     }
   };
 
+
+  const getBlobUrl = (blobData) => {
+  if (!blobData) return '';
+  
+  try {
+    // Se for uma string JSON
+    if (typeof blobData === 'string' && blobData.startsWith('{')) {
+      const parsed = JSON.parse(blobData);
+      return parsed.url || parsed.downloadUrl || '';
+    }
+    // Se for um objeto
+    else if (typeof blobData === 'object' && blobData !== null) {
+      return blobData.url || blobData.downloadUrl || '';
+    }
+    // Se já for uma URL string
+    else if (typeof blobData === 'string' && blobData.startsWith('http')) {
+      return blobData;
+    }
+    return '';
+  } catch (error) {
+    console.error('Erro ao extrair URL do blob:', error);
+    return '';
+  }
+};
+
+// Função auxiliar para extrair a URL de download
+const getDownloadUrl = (blobData) => {
+  if (!blobData) return '';
+  
+  try {
+    // Se for uma string JSON
+    if (typeof blobData === 'string' && blobData.startsWith('{')) {
+      const parsed = JSON.parse(blobData);
+      return parsed.downloadUrl || parsed.url || '';
+    }
+    // Se for um objeto
+    else if (typeof blobData === 'object' && blobData !== null) {
+      return blobData.downloadUrl || blobData.url || '';
+    }
+    // Se já for uma URL string, adicionar parâmetro de download
+    else if (typeof blobData === 'string' && blobData.startsWith('http')) {
+      // Se já tem parâmetro de download, manter
+      if (blobData.includes('?download=')) return blobData;
+      // Se não tem, adicionar
+      return `${blobData}?download=1`;
+    }
+    return '';
+  } catch (error) {
+    console.error('Erro ao extrair download URL:', error);
+    return '';
+  }
+};
+
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
     setPage(0);
@@ -795,25 +848,27 @@ const AdminInscricoes = () => {
                             </Typography>
                           </Box>
                           <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={<OpenInNewIcon />}
-                             href={JSON.parse(arquivo.blob_url).url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            Abrir
-                          </Button>
+  size="small"
+  variant="outlined"
+  startIcon={<OpenInNewIcon />}
+  href={getBlobUrl(arquivo.blob_url)}
+  target="_blank"
+  rel="noopener noreferrer"
+  disabled={!getBlobUrl(arquivo.blob_url)}
+>
+  Abrir
+</Button>
 
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={<DownloadIcon />}
-                            href={JSON.parse(arquivo.blob_url).downloadUrl}
-                            download
-                          >
-                            Baixar
-                          </Button>
+<Button
+  size="small"
+  variant="outlined"
+  startIcon={<DownloadIcon />}
+  href={getDownloadUrl(arquivo.blob_url)}
+  download
+  disabled={!getDownloadUrl(arquivo.blob_url)}
+>
+  Baixar
+</Button>
                         </Box>
                       </Card>
                     </Grid>

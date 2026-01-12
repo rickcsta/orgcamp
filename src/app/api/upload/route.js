@@ -46,7 +46,7 @@ export async function POST(request) {
       );
     }
 
-    // Validar tamanho do arquivo (max 5MB)
+    // Validar tamanho do arquivo (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
       console.error('Erro: Arquivo muito grande:', file.size);
       return NextResponse.json(
@@ -98,7 +98,7 @@ export async function POST(request) {
 
     // Verificar se já existe um arquivo deste tipo
     const arquivoExistente = await pool.query(
-      'SELECT id FROM arquivos WHERE dupla_id = $1 AND tipo = $2',
+      'SELECT id, blob_url FROM arquivos WHERE dupla_id = $1 AND tipo = $2',
       [dupla.id, tipo]
     );
 
@@ -112,23 +112,28 @@ export async function POST(request) {
 
     console.log('Fazendo upload para blob:', nomeArquivo);
 
-    // Upload para Vercel Blob
-    let blobUrl;
+    // ⚠️ IMPORTANTE: O put() retorna um objeto, precisamos extrair a URL
+    let blobResult;
     try {
-      blobUrl = await put(nomeArquivo, file, {
+      blobResult = await put(nomeArquivo, file, {
         access: 'public',
         token: process.env.BLOB_READ_WRITE_TOKEN
       });
-      console.log('Upload para blob realizado com sucesso:', blobUrl);
+      console.log('Upload para blob realizado com sucesso:', blobResult);
     } catch (blobError) {
       console.error('Erro ao fazer upload para blob:', blobError);
-      throw new Error('Falha no upload do arquivo para armazenamento');
+      return NextResponse.json(
+        { error: 'Falha no upload do arquivo para armazenamento' },
+        { status: 500 }
+      );
     }
+
+    // ⚠️ CORREÇÃO: Pegar apenas a URL string do objeto
+    const blobUrl = blobResult.url;
 
     // Salvar no banco de dados
     if (arquivoExistente.rows.length > 0) {
       console.log('Atualizando arquivo existente...');
-      // Atualizar arquivo existente
       await pool.query(`
         UPDATE arquivos 
         SET blob_url = $1, criado_em = NOW()
@@ -136,7 +141,6 @@ export async function POST(request) {
       `, [blobUrl, dupla.id, tipo]);
     } else {
       console.log('Inserindo novo arquivo...');
-      // Inserir novo arquivo
       await pool.query(`
         INSERT INTO arquivos (dupla_id, tipo, blob_url)
         VALUES ($1, $2, $3)
@@ -156,14 +160,6 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Erro ao fazer upload:', error);
-    
-    if (error.message.includes('Falha no upload')) {
-      return NextResponse.json(
-        { error: 'Erro ao fazer upload do arquivo. Tente novamente.' },
-        { status: 500 }
-      );
-    }
-    
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
