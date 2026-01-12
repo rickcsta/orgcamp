@@ -19,12 +19,6 @@ import {
   DialogActions,
   TextField,
   Grid,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TablePagination,
   FormControl,
   InputLabel,
@@ -35,38 +29,20 @@ import {
   Badge,
   Avatar,
   InputAdornment,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  ListItemSecondaryAction,
   CircularProgress,
   Snackbar,
   IconButton,
   Stack,
   Tooltip,
-  LinearProgress,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Tab as MuiTab,
-  Tabs as MuiTabs,
-  Fade,
-  Zoom,
-  Slide,
-  CardMedia,
-  CardHeader,
-  alpha,
-  useTheme
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
   PendingActions as PendingIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
-  Visibility as ViewIcon,
   Search as SearchIcon,
-  FilterList as FilterIcon,
   Refresh as RefreshIcon,
   Person as PersonIcon,
   Email as EmailIcon,
@@ -79,26 +55,19 @@ import {
   Info as InfoIcon,
   Download as DownloadIcon,
   Print as PrintIcon,
-  MoreVert as MoreVertIcon,
   AttachFile as AttachFileIcon,
   AccessTime as AccessTimeIcon,
-  Paid as PaidIcon,
-  CalendarToday as CalendarIcon,
   ExpandMore as ExpandMoreIcon,
   Clear as ClearIcon,
   Description as DescriptionIcon,
-  Payment as PaymentIcon,
   Sports as SportsIcon,
   PictureAsPdf as PdfIcon,
   Image as ImageIcon,
   InsertDriveFile as FileIcon,
   ArrowForward as ArrowForwardIcon,
   Speed as SpeedIcon,
-  TrendingUp as TrendingUpIcon,
-  PersonAdd as PersonAddIcon,
-  DeleteOutline as DeleteOutlineIcon,
-  Upload as UploadIcon,
-  OpenInNew as OpenInNewIcon
+  OpenInNew as OpenInNewIcon,
+  FilterList as FilterIcon
 } from '@mui/icons-material';
 import MuiAlert from '@mui/material/Alert';
 
@@ -106,7 +75,7 @@ const AlertComponent = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
-// API functions
+// API functions (mantido igual)
 const adminAPI = {
   async getInscricoes(filters = {}) {
     const params = new URLSearchParams();
@@ -169,6 +138,10 @@ const adminAPI = {
 
 const AdminInscricoes = () => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
+  
   const [tabValue, setTabValue] = useState(0);
   const [inscricoes, setInscricoes] = useState([]);
   const [estatisticas, setEstatisticas] = useState(null);
@@ -179,7 +152,7 @@ const AdminInscricoes = () => {
   const [openRecusaDialog, setOpenRecusaDialog] = useState(false);
   const [motivoRecusa, setMotivoRecusa] = useState('');
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(isMobile ? 5 : 10);
   const [filtroCategoria, setFiltroCategoria] = useState('Todas');
   const [searchText, setSearchText] = useState('');
   const [snackbar, setSnackbar] = useState({
@@ -233,58 +206,48 @@ const AdminInscricoes = () => {
     }
   };
 
-
   const getBlobUrl = (blobData) => {
-  if (!blobData) return '';
-  
-  try {
-    // Se for uma string JSON
-    if (typeof blobData === 'string' && blobData.startsWith('{')) {
-      const parsed = JSON.parse(blobData);
-      return parsed.url || parsed.downloadUrl || '';
+    if (!blobData) return '';
+    
+    try {
+      if (typeof blobData === 'string' && blobData.startsWith('{')) {
+        const parsed = JSON.parse(blobData);
+        return parsed.url || parsed.downloadUrl || '';
+      }
+      else if (typeof blobData === 'object' && blobData !== null) {
+        return blobData.url || blobData.downloadUrl || '';
+      }
+      else if (typeof blobData === 'string' && blobData.startsWith('http')) {
+        return blobData;
+      }
+      return '';
+    } catch (error) {
+      console.error('Erro ao extrair URL do blob:', error);
+      return '';
     }
-    // Se for um objeto
-    else if (typeof blobData === 'object' && blobData !== null) {
-      return blobData.url || blobData.downloadUrl || '';
-    }
-    // Se já for uma URL string
-    else if (typeof blobData === 'string' && blobData.startsWith('http')) {
-      return blobData;
-    }
-    return '';
-  } catch (error) {
-    console.error('Erro ao extrair URL do blob:', error);
-    return '';
-  }
-};
+  };
 
-// Função auxiliar para extrair a URL de download
-const getDownloadUrl = (blobData) => {
-  if (!blobData) return '';
-  
-  try {
-    // Se for uma string JSON
-    if (typeof blobData === 'string' && blobData.startsWith('{')) {
-      const parsed = JSON.parse(blobData);
-      return parsed.downloadUrl || parsed.url || '';
+  const getDownloadUrl = (blobData) => {
+    if (!blobData) return '';
+    
+    try {
+      if (typeof blobData === 'string' && blobData.startsWith('{')) {
+        const parsed = JSON.parse(blobData);
+        return parsed.downloadUrl || parsed.url || '';
+      }
+      else if (typeof blobData === 'object' && blobData !== null) {
+        return blobData.downloadUrl || blobData.url || '';
+      }
+      else if (typeof blobData === 'string' && blobData.startsWith('http')) {
+        if (blobData.includes('?download=')) return blobData;
+        return `${blobData}?download=1`;
+      }
+      return '';
+    } catch (error) {
+      console.error('Erro ao extrair download URL:', error);
+      return '';
     }
-    // Se for um objeto
-    else if (typeof blobData === 'object' && blobData !== null) {
-      return blobData.downloadUrl || blobData.url || '';
-    }
-    // Se já for uma URL string, adicionar parâmetro de download
-    else if (typeof blobData === 'string' && blobData.startsWith('http')) {
-      // Se já tem parâmetro de download, manter
-      if (blobData.includes('?download=')) return blobData;
-      // Se não tem, adicionar
-      return `${blobData}?download=1`;
-    }
-    return '';
-  } catch (error) {
-    console.error('Erro ao extrair download URL:', error);
-    return '';
-  }
-};
+  };
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -316,10 +279,8 @@ const getDownloadUrl = (blobData) => {
       await adminAPI.updateStatus(inscricaoId, 'confirmado');
       showSnackbar('Inscrição confirmada com sucesso!', 'success', <CheckCircleIcon />);
       
-      // Atualização otimizada - não recarrega tudo
       setInscricoes(prev => prev.filter(insc => insc.id !== inscricaoId));
       
-      // Atualizar estatísticas localmente
       if (estatisticas) {
         setEstatisticas(prev => ({
           ...prev,
@@ -349,10 +310,8 @@ const getDownloadUrl = (blobData) => {
       await adminAPI.updateStatus(selectedInscricao.id, 'recusado', motivoRecusa);
       showSnackbar('Inscrição recusada com sucesso!', 'info', <InfoIcon />);
       
-      // Atualização otimizada
       setInscricoes(prev => prev.filter(insc => insc.id !== selectedInscricao.id));
       
-      // Atualizar estatísticas localmente
       if (estatisticas) {
         setEstatisticas(prev => ({
           ...prev,
@@ -403,6 +362,9 @@ const getDownloadUrl = (blobData) => {
     if (!dateString) return '-';
     try {
       const date = new Date(dateString);
+      if (isMobile) {
+        return date.toLocaleDateString('pt-BR');
+      }
       return date.toLocaleDateString('pt-BR') + ' ' + 
              date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     } catch (e) {
@@ -434,11 +396,11 @@ const getDownloadUrl = (blobData) => {
 
   const getStatusLabel = (status) => {
     switch(status) {
-      case 'aguardando_pagamento': return 'AGUARDANDO PAGAMENTO';
-      case 'pendente': return 'EM ANÁLISE';
-      case 'confirmado': return 'CONFIRMADO';
-      case 'recusado': return 'RECUSADO';
-      case 'cancelado': return 'CANCELADO';
+      case 'aguardando_pagamento': return isMobile ? 'PAGTO' : 'AGUARDANDO PAGAMENTO';
+      case 'pendente': return isMobile ? 'ANÁLISE' : 'EM ANÁLISE';
+      case 'confirmado': return isMobile ? 'OK' : 'CONFIRMADO';
+      case 'recusado': return isMobile ? 'RECUSADO' : 'RECUSADO';
+      case 'cancelado': return isMobile ? 'CANC' : 'CANCELADO';
       default: return status?.toUpperCase() || '';
     }
   };
@@ -469,18 +431,27 @@ const getDownloadUrl = (blobData) => {
     return <FileIcon />;
   };
 
+  // Determinar número de cards por linha baseado no tamanho da tela
+  const getGridSize = () => {
+    if (isMobile) return 12;
+    if (isTablet) return 6;
+    return tabValue === 1 ? 6 : 4;
+  };
+
   // Renderizar conteúdo baseado na tab
   const renderTabContent = () => {
     if (loading) {
       return (
         <Box display="flex" justifyContent="center" alignItems="center" p={6} flexDirection="column">
-          <CircularProgress size={60} thickness={4} />
-          <Typography variant="h6" color="text.secondary" sx={{ mt: 3 }}>
+          <CircularProgress size={isMobile ? 40 : 60} thickness={4} />
+          <Typography variant={isMobile ? "body1" : "h6"} color="text.secondary" sx={{ mt: 3 }}>
             Carregando inscrições...
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Isso pode levar alguns segundos
-          </Typography>
+          {!isMobile && (
+            <Typography variant="body2" color="text.secondary">
+              Isso pode levar alguns segundos
+            </Typography>
+          )}
         </Box>
       );
     }
@@ -494,14 +465,19 @@ const getDownloadUrl = (blobData) => {
 
     if (currentInscricoes.length === 0) {
       return (
-        <Box textAlign="center" py={8}>
-          <SportsIcon sx={{ fontSize: 80, color: 'text.disabled', mb: 2, opacity: 0.5 }} />
-          <Typography variant="h5" color="text.secondary" gutterBottom>
+        <Box textAlign="center" py={isMobile ? 4 : 8}>
+          <SportsIcon sx={{ 
+            fontSize: isMobile ? 60 : 80, 
+            color: 'text.disabled', 
+            mb: 2, 
+            opacity: 0.5 
+          }} />
+          <Typography variant={isMobile ? "h6" : "h5"} color="text.secondary" gutterBottom>
             {tabValue === 0 && 'Nenhuma inscrição pendente'}
             {tabValue === 1 && 'Nenhuma inscrição confirmada'}
             {tabValue === 2 && 'Nenhuma inscrição recusada'}
           </Typography>
-          <Typography variant="body1" color="text.secondary" paragraph>
+          <Typography variant="body2" color="text.secondary" paragraph>
             {tabValue === 0 && 'Todas as inscrições pendentes já foram processadas.'}
             {tabValue === 1 && 'As inscrições confirmadas aparecerão aqui.'}
             {tabValue === 2 && 'Nenhuma inscrição foi recusada até o momento.'}
@@ -512,6 +488,7 @@ const getDownloadUrl = (blobData) => {
               startIcon={<ClearIcon />}
               onClick={handleClearSearch}
               sx={{ mt: 2 }}
+              size={isMobile ? "small" : "medium"}
             >
               Limpar filtros
             </Button>
@@ -520,13 +497,13 @@ const getDownloadUrl = (blobData) => {
       );
     }
 
-    // Cards para todas as abas
+    // Cards responsivos
     return (
-      <Grid container spacing={3}>
+      <Grid container spacing={isMobile ? 2 : 3}>
         {currentInscricoes
           .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
           .map((inscricao) => (
-            <Grid item xs={12} sm={6} md={tabValue === 1 ? 6 : 4} key={inscricao.id}>
+            <Grid item xs={12} sm={6} md={getGridSize()} key={inscricao.id}>
               <Card 
                 sx={{ 
                   height: '100%',
@@ -537,125 +514,154 @@ const getDownloadUrl = (blobData) => {
                   borderColor: 'divider',
                   '&:hover': {
                     transform: 'translateY(-4px)',
-                    boxShadow: 6,
+                    boxShadow: 4,
                     borderColor: 'primary.main',
                     cursor: 'pointer'
                   }
                 }}
                 onClick={() => handleViewInscricao(inscricao)}
               >
-                <CardHeader
-                  avatar={
-                    <Tooltip title={getStatusTooltip(inscricao.status)} arrow>
-                      <Avatar sx={{ bgcolor: `${getStatusColor(inscricao.status)}.main` }}>
-                        {getStatusIcon(inscricao.status)}
-                      </Avatar>
-                    </Tooltip>
-                  }
-                  action={
-                    <Tooltip title="Ver detalhes" arrow>
-                      <IconButton>
-                        <ArrowForwardIcon />
-                      </IconButton>
-                    </Tooltip>
-                  }
-                  title={
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Typography variant="h6" color="primary" fontWeight="bold">
-                        {inscricao.codigo}
-                      </Typography>
-                      <Chip
-                        size="small"
-                        label={getStatusLabel(inscricao.status)}
-                        color={getStatusColor(inscricao.status)}
-                        sx={{ fontWeight: 600 }}
-                      />
+                <Box sx={{ p: isMobile ? 1.5 : 2 }}>
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={1.5}>
+                    <Box display="flex" alignItems="center" gap={1} flex={1} overflow="hidden">
+                      <Tooltip title={getStatusTooltip(inscricao.status)} arrow>
+                        <Avatar sx={{ 
+                          bgcolor: `${getStatusColor(inscricao.status)}.main`,
+                          width: isMobile ? 32 : 40,
+                          height: isMobile ? 32 : 40
+                        }}>
+                          {getStatusIcon(inscricao.status)}
+                        </Avatar>
+                      </Tooltip>
+                      <Box flex={1} minWidth={0}>
+                        <Typography 
+                          variant={isMobile ? "subtitle2" : "h6"} 
+                          color="primary" 
+                          fontWeight="bold"
+                          noWrap
+                        >
+                          {isMobile ? inscricao.codigo.split('-')[0] : inscricao.codigo}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {formatDateTime(inscricao.dataInscricao)}
+                        </Typography>
+                      </Box>
                     </Box>
-                  }
-                  subheader={formatDateTime(inscricao.dataInscricao)}
-                />
-                
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom noWrap>
-                    {inscricao.responsavel}
-                  </Typography>
+                    
+                    <Chip
+                      size={isMobile ? "small" : "medium"}
+                      label={getStatusLabel(inscricao.status)}
+                      color={getStatusColor(inscricao.status)}
+                      sx={{ 
+                        fontWeight: 600,
+                        ml: 1,
+                        fontSize: isMobile ? '0.7rem' : '0.875rem'
+                      }}
+                    />
+                  </Box>
                   
-                  <Stack spacing={1} sx={{ mb: 2 }}>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <EmailIcon fontSize="small" color="action" />
-                      <Typography variant="body2" color="text.secondary" noWrap>
-                        {inscricao.email}
-                      </Typography>
-                    </Box>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <PhoneIcon fontSize="small" color="action" />
-                      <Typography variant="body2" color="text.secondary">
-                        {inscricao.telefone}
-                      </Typography>
-                    </Box>
-                  </Stack>
+                  <Box mb={2}>
+                    <Typography 
+                      variant={isMobile ? "body2" : "subtitle1"} 
+                      fontWeight="bold" 
+                      gutterBottom
+                      noWrap
+                    >
+                      {inscricao.responsavel}
+                    </Typography>
+                    
+                    <Stack spacing={0.5}>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <EmailIcon fontSize={isMobile ? "small" : "medium"} color="action" />
+                        <Typography 
+                          variant={isMobile ? "caption" : "body2"} 
+                          color="text.secondary" 
+                          noWrap
+                        >
+                          {inscricao.email}
+                        </Typography>
+                      </Box>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <PhoneIcon fontSize={isMobile ? "small" : "medium"} color="action" />
+                        <Typography variant={isMobile ? "caption" : "body2"} color="text.secondary">
+                          {inscricao.telefone}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Box>
                   
                   <Divider sx={{ my: 1 }} />
                   
                   <Box mb={2}>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                    <Typography variant={isMobile ? "caption" : "body2"} color="text.secondary" gutterBottom>
                       Categoria
                     </Typography>
-                    <Typography variant="body1" fontWeight="medium">
+                    <Typography variant={isMobile ? "body2" : "body1"} fontWeight="medium">
                       {inscricao.categoria}
                     </Typography>
                   </Box>
                   
                   <Grid container spacing={2}>
                     <Grid item xs={6}>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant={isMobile ? "caption" : "body2"} color="text.secondary">
                         Valor
                       </Typography>
-                      <Typography variant="h6" color="primary" fontWeight="bold">
+                      <Typography 
+                        variant={isMobile ? "body2" : "h6"} 
+                        color="primary" 
+                        fontWeight="bold"
+                      >
                         {formatCurrency(inscricao.valor)}
                       </Typography>
                     </Grid>
                     <Grid item xs={6}>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant={isMobile ? "caption" : "body2"} color="text.secondary">
                         Dupla
                       </Typography>
-                      <Typography variant="body2">
+                      <Typography variant={isMobile ? "caption" : "body2"}>
                         {inscricao.jogador1?.nome?.split(' ')[0]} & {inscricao.jogador2?.nome?.split(' ')[0]}
                       </Typography>
                     </Grid>
                   </Grid>
-                </CardContent>
+                </Box>
                 
                 {tabValue === 0 && (
-                  <CardActions sx={{ p: 2, pt: 0, justifyContent: 'space-between' }}>
+                  <CardActions sx={{ 
+                    p: isMobile ? 1 : 2, 
+                    pt: 0, 
+                    gap: isMobile ? 0.5 : 1,
+                    justifyContent: 'space-between'
+                  }}>
                     <Tooltip title="Aceitar inscrição" arrow>
                       <Button
-                        size="small"
+                        size={isMobile ? "small" : "medium"}
                         variant="contained"
                         color="success"
-                        startIcon={<CheckIcon />}
+                        startIcon={isMobile ? null : <CheckIcon />}
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedInscricao(inscricao);
                           handleAceitarInscricao(inscricao.id);
                         }}
+                        fullWidth={isMobile}
                       >
-                        Aceitar
+                        {isMobile ? '✓' : 'Aceitar'}
                       </Button>
                     </Tooltip>
                     <Tooltip title="Recusar inscrição" arrow>
                       <Button
-                        size="small"
+                        size={isMobile ? "small" : "medium"}
                         variant="outlined"
                         color="error"
-                        startIcon={<CloseIcon />}
+                        startIcon={isMobile ? null : <CloseIcon />}
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedInscricao(inscricao);
                           setOpenRecusaDialog(true);
                         }}
+                        fullWidth={isMobile}
                       >
-                        Recusar
+                        {isMobile ? '✕' : 'Recusar'}
                       </Button>
                     </Tooltip>
                   </CardActions>
@@ -672,37 +678,48 @@ const getDownloadUrl = (blobData) => {
 
     return (
       <Box sx={{ width: '100%' }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <MuiTabs value={dialogTab} onChange={handleDialogTabChange}>
-            <MuiTab icon={<PersonIcon />} label="Responsável" />
-            <MuiTab icon={<GroupsIcon />} label="Dupla" />
-            <MuiTab icon={<DescriptionIcon />} label="Inscrição" />
-            <MuiTab 
-              icon={<AttachFileIcon />} 
-              label={`Arquivos (${selectedInscricao.arquivos?.length || 0})`} 
+        <Box sx={{ 
+          borderBottom: 1, 
+          borderColor: 'divider',
+          overflow: 'auto'
+        }}>
+          <Tabs 
+            value={dialogTab} 
+            onChange={handleDialogTabChange}
+            variant={isMobile ? "scrollable" : "fullWidth"}
+            scrollButtons={isMobile ? "auto" : false}
+          >
+            <Tab icon={isMobile ? null : <PersonIcon />} label="Responsável" />
+            <Tab icon={isMobile ? null : <GroupsIcon />} label="Dupla" />
+            <Tab icon={isMobile ? null : <DescriptionIcon />} label="Inscrição" />
+            <Tab 
+              icon={isMobile ? null : <AttachFileIcon />} 
+              label={`Arq. (${selectedInscricao.arquivos?.length || 0})`} 
             />
-          </MuiTabs>
+          </Tabs>
         </Box>
         
-        <Box sx={{ pt: 3 }}>
+        <Box sx={{ pt: 2 }}>
           {dialogTab === 0 && (
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
                 <TextField
                   fullWidth
                   label="Nome completo"
                   value={selectedInscricao.responsavel}
                   InputProps={{ readOnly: true }}
                   variant="outlined"
+                  size={isMobile ? "small" : "medium"}
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12}>
                 <TextField
                   fullWidth
                   label="Email"
                   value={selectedInscricao.email}
                   InputProps={{ readOnly: true }}
                   variant="outlined"
+                  size={isMobile ? "small" : "medium"}
                 />
               </Grid>
               <Grid item xs={12} md={6}>
@@ -712,6 +729,7 @@ const getDownloadUrl = (blobData) => {
                   value={selectedInscricao.telefone}
                   InputProps={{ readOnly: true }}
                   variant="outlined"
+                  size={isMobile ? "small" : "medium"}
                 />
               </Grid>
               <Grid item xs={12} md={6}>
@@ -721,50 +739,51 @@ const getDownloadUrl = (blobData) => {
                   value={formatDateTime(selectedInscricao.dataInscricao)}
                   InputProps={{ readOnly: true }}
                   variant="outlined"
+                  size={isMobile ? "small" : "medium"}
                 />
               </Grid>
             </Grid>
           )}
           
           {dialogTab === 1 && (
-            <Grid container spacing={3}>
+            <Grid container spacing={2}>
               <Grid item xs={12} md={6}>
-                <Card variant="outlined" sx={{ p: 2 }}>
-                  <Typography variant="h6" color="primary" gutterBottom>
+                <Card variant="outlined" sx={{ p: isMobile ? 1.5 : 2 }}>
+                  <Typography variant={isMobile ? "subtitle1" : "h6"} color="primary" gutterBottom>
                     Jogador 1
                   </Typography>
-                  <Typography variant="body1" fontWeight="bold" gutterBottom>
+                  <Typography variant={isMobile ? "body2" : "body1"} fontWeight="bold" gutterBottom>
                     {selectedInscricao.jogador1?.nome || 'N/A'}
                   </Typography>
-                  <Stack spacing={1}>
-                      <Typography variant="body2">
-                        <strong>Data de Nascimento:</strong> {formatDate(selectedInscricao.jogador1?.nascimento)}
-                      </Typography>
-                    <Typography variant="body2">
+                  <Stack spacing={0.5}>
+                    <Typography variant={isMobile ? "caption" : "body2"}>
+                      <strong>Data Nasc.:</strong> {formatDate(selectedInscricao.jogador1?.nascimento)}
+                    </Typography>
+                    <Typography variant={isMobile ? "caption" : "body2"}>
                       <strong>Idade:</strong> {selectedInscricao.jogador1?.idade || 'N/A'} anos
                     </Typography>
-                    <Typography variant="body2">
+                    <Typography variant={isMobile ? "caption" : "body2"}>
                       <strong>Camisa:</strong> {selectedInscricao.jogador1?.camisa || 'N/A'}
                     </Typography>
                   </Stack>
                 </Card>
               </Grid>
               <Grid item xs={12} md={6}>
-                <Card variant="outlined" sx={{ p: 2 }}>
-                  <Typography variant="h6" color="primary" gutterBottom>
+                <Card variant="outlined" sx={{ p: isMobile ? 1.5 : 2 }}>
+                  <Typography variant={isMobile ? "subtitle1" : "h6"} color="primary" gutterBottom>
                     Jogador 2
                   </Typography>
-                  <Typography variant="body1" fontWeight="bold" gutterBottom>
+                  <Typography variant={isMobile ? "body2" : "body1"} fontWeight="bold" gutterBottom>
                     {selectedInscricao.jogador2?.nome || 'N/A'}
                   </Typography>
-                  <Stack spacing={1}>
-                    <Typography variant="body2">
-                        <strong>Data de Nascimento:</strong> {formatDate(selectedInscricao.jogador2?.nascimento)}
-                      </Typography>
-                    <Typography variant="body2">
+                  <Stack spacing={0.5}>
+                    <Typography variant={isMobile ? "caption" : "body2"}>
+                      <strong>Data Nasc.:</strong> {formatDate(selectedInscricao.jogador2?.nascimento)}
+                    </Typography>
+                    <Typography variant={isMobile ? "caption" : "body2"}>
                       <strong>Idade:</strong> {selectedInscricao.jogador2?.idade || 'N/A'} anos
                     </Typography>
-                    <Typography variant="body2">
+                    <Typography variant={isMobile ? "caption" : "body2"}>
                       <strong>Camisa:</strong> {selectedInscricao.jogador2?.camisa || 'N/A'}
                     </Typography>
                   </Stack>
@@ -774,7 +793,7 @@ const getDownloadUrl = (blobData) => {
           )}
           
           {dialogTab === 2 && (
-            <Grid container spacing={3}>
+            <Grid container spacing={2}>
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
@@ -782,6 +801,7 @@ const getDownloadUrl = (blobData) => {
                   value={selectedInscricao.categoria}
                   InputProps={{ readOnly: true }}
                   variant="outlined"
+                  size={isMobile ? "small" : "medium"}
                 />
               </Grid>
               <Grid item xs={12} md={6}>
@@ -791,9 +811,10 @@ const getDownloadUrl = (blobData) => {
                   value={formatCurrency(selectedInscricao.valor)}
                   InputProps={{ readOnly: true }}
                   variant="outlined"
+                  size={isMobile ? "small" : "medium"}
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12}>
                 <TextField
                   fullWidth
                   label="Status"
@@ -808,12 +829,13 @@ const getDownloadUrl = (blobData) => {
                   }}
                   variant="outlined"
                   color={getStatusColor(selectedInscricao.status)}
+                  size={isMobile ? "small" : "medium"}
                 />
               </Grid>
               {selectedInscricao.motivoRecusa && (
                 <Grid item xs={12}>
-                  <Alert severity="error" icon={<WarningIcon />}>
-                    <Typography variant="body2">
+                  <Alert severity="error" icon={<WarningIcon />} sx={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}>
+                    <Typography variant={isMobile ? "caption" : "body2"}>
                       <strong>Motivo da recusa:</strong> {selectedInscricao.motivoRecusa}
                     </Typography>
                   </Alert>
@@ -825,62 +847,76 @@ const getDownloadUrl = (blobData) => {
           {dialogTab === 3 && (
             <Box>
               {selectedInscricao.arquivos?.length > 0 ? (
-                <Grid container spacing={2}>
+                <Grid container spacing={1}>
                   {selectedInscricao.arquivos.map((arquivo, index) => (
-                    <Grid item xs={12} md={6} key={index}>
+                    <Grid item xs={12} key={index}>
                       <Card 
                         variant="outlined"
                         sx={{ 
-                          p: 2,
+                          p: 1.5,
                           '&:hover': { bgcolor: 'action.hover' }
                         }}
                       >
                         <Box display="flex" alignItems="center" gap={2}>
-                          <Avatar sx={{ bgcolor: 'primary.main' }}>
+                          <Avatar sx={{ 
+                            bgcolor: 'primary.main',
+                            width: isMobile ? 32 : 40,
+                            height: isMobile ? 32 : 40
+                          }}>
                             {getFileIcon(arquivo.tipo)}
                           </Avatar>
-                          <Box flex={1}>
-                            <Typography variant="subtitle2" fontWeight="medium">
+                          <Box flex={1} minWidth={0}>
+                            <Typography 
+                              variant={isMobile ? "caption" : "subtitle2"} 
+                              fontWeight="medium"
+                              noWrap
+                            >
                               {arquivo.descricao || arquivo.tipo}
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
                               {formatDateTime(arquivo.criado_em)}
                             </Typography>
                           </Box>
-                          <Button
-  size="small"
-  variant="outlined"
-  startIcon={<OpenInNewIcon />}
-  href={getBlobUrl(arquivo.blob_url)}
-  target="_blank"
-  rel="noopener noreferrer"
-  disabled={!getBlobUrl(arquivo.blob_url)}
->
-  Abrir
-</Button>
-
-<Button
-  size="small"
-  variant="outlined"
-  startIcon={<DownloadIcon />}
-  href={getDownloadUrl(arquivo.blob_url)}
-  download
-  disabled={!getDownloadUrl(arquivo.blob_url)}
->
-  Baixar
-</Button>
+                          <Stack direction="row" spacing={0.5}>
+                            <Button
+                              size={isMobile ? "small" : "medium"}
+                              variant="outlined"
+                              startIcon={isMobile ? null : <OpenInNewIcon />}
+                              href={getBlobUrl(arquivo.blob_url)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              disabled={!getBlobUrl(arquivo.blob_url)}
+                            >
+                              {isMobile ? 'Abrir' : 'Abrir'}
+                            </Button>
+                            <Button
+                              size={isMobile ? "small" : "medium"}
+                              variant="outlined"
+                              startIcon={isMobile ? null : <DownloadIcon />}
+                              href={getDownloadUrl(arquivo.blob_url)}
+                              download
+                              disabled={!getDownloadUrl(arquivo.blob_url)}
+                            >
+                              {isMobile ? 'Baixar' : 'Baixar'}
+                            </Button>
+                          </Stack>
                         </Box>
                       </Card>
                     </Grid>
                   ))}
                 </Grid>
               ) : (
-                <Box textAlign="center" py={4}>
-                  <AttachFileIcon sx={{ fontSize: 60, color: 'text.disabled', mb: 2, opacity: 0.5 }} />
-                  <Typography variant="h6" color="text.secondary" gutterBottom>
-                    Nenhum arquivo anexado
+                <Box textAlign="center" py={isMobile ? 2 : 4}>
+                  <AttachFileIcon sx={{ 
+                    fontSize: isMobile ? 40 : 60, 
+                    color: 'text.disabled', 
+                    mb: 1, 
+                    opacity: 0.5 
+                  }} />
+                  <Typography variant={isMobile ? "body1" : "h6"} color="text.secondary" gutterBottom>
+                    Nenhum arquivo
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant={isMobile ? "caption" : "body2"} color="text.secondary">
                     Esta inscrição não possui arquivos anexados
                   </Typography>
                 </Box>
@@ -893,29 +929,41 @@ const getDownloadUrl = (blobData) => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+    <Container 
+      maxWidth="xl" 
+      sx={{ 
+        mt: isMobile ? 2 : 4, 
+        mb: isMobile ? 2 : 4,
+        px: isMobile ? 2 : 3
+      }}
+    >
       {/* Header */}
       <Paper 
         sx={{ 
-          p: { xs: 2, md: 3 }, 
-          mb: 3, 
+          p: isMobile ? 2 : 3, 
+          mb: isMobile ? 2 : 3, 
           background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
           color: 'white',
-          borderRadius: 3,
-          boxShadow: 3
+          borderRadius: isMobile ? 2 : 3,
+          boxShadow: 2
         }}
       >
         <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
-          <Box display="flex" alignItems="center" gap={2}>
-            <Avatar sx={{ bgcolor: 'white', color: 'primary.main', width: 56, height: 56 }}>
-              <DashboardIcon fontSize="large" />
+          <Box display="flex" alignItems="center" gap={isMobile ? 1 : 2}>
+            <Avatar sx={{ 
+              bgcolor: 'white', 
+              color: 'primary.main', 
+              width: isMobile ? 40 : 56, 
+              height: isMobile ? 40 : 56 
+            }}>
+              <DashboardIcon fontSize={isMobile ? "medium" : "large"} />
             </Avatar>
             <Box>
-              <Typography variant="h4" fontWeight="bold">
-                Painel Administrativo
+              <Typography variant={isMobile ? "h6" : "h4"} fontWeight="bold">
+                {isMobile ? 'Admin' : 'Painel Administrativo'}
               </Typography>
-              <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
-                Gerenciamento de Inscrições
+              <Typography variant={isMobile ? "caption" : "subtitle1"} sx={{ opacity: 0.9 }}>
+                {isMobile ? 'Inscrições' : 'Gerenciamento de Inscrições'}
               </Typography>
             </Box>
           </Box>
@@ -924,9 +972,10 @@ const getDownloadUrl = (blobData) => {
             <Button
               variant="contained"
               color="secondary"
-              startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <RefreshIcon />}
+              startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
               onClick={loadData}
               disabled={loading}
+              size={isMobile ? "small" : "medium"}
               sx={{ 
                 bgcolor: 'white', 
                 color: 'primary.main',
@@ -934,83 +983,104 @@ const getDownloadUrl = (blobData) => {
                   bgcolor: 'grey.100',
                   transform: 'scale(1.05)'
                 },
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                minWidth: isMobile ? 'auto' : 'initial'
               }}
             >
-              {loading ? 'Atualizando...' : 'Atualizar Dados'}
+              {isMobile ? (loading ? '' : 'Atualizar') : (loading ? 'Atualizando...' : 'Atualizar Dados')}
             </Button>
           </Tooltip>
         </Box>
 
         {/* Estatísticas */}
-        <Box sx={{ mt: 4 }}>
-  {loadingEstatisticas ? (
-    <Box textAlign="center" py={3}>
-      <CircularProgress size={24} sx={{ color: 'white' }} />
-      <Typography variant="body2" sx={{ mt: 1, opacity: 0.8 }}>
-        Carregando estatísticas...
-      </Typography>
-    </Box>
-  ) : estatisticas ? (
-    <Grid container spacing={2}>
-      {[
-        { label: 'Pendentes', value: estatisticas.por_status?.pendentes || 0, color: 'warning', icon: <PendingIcon />, tooltip: 'Inscrições aguardando análise' },
-        { label: 'Confirmadas', value: estatisticas.por_status?.confirmadas || 0, color: 'success', icon: <CheckCircleIcon />, tooltip: 'Inscrições validadas' },
-        { label: 'Recusadas', value: estatisticas.por_status?.recusadas || 0, color: 'error', icon: <CancelIcon />, tooltip: 'Inscrições recusadas' },
-        { label: 'Total', value: estatisticas.total_inscricoes || 0, color: 'info', icon: <SpeedIcon />, tooltip: 'Total de inscrições' }
-      ].map((stat, index) => (
-        <Grid item xs={6} sm={3} key={index}>
-          <Tooltip title={stat.tooltip} arrow>
-            <Card
-              sx={{
-                p: 2,
-                bgcolor: `${stat.color}.main`, // fundo sólido
-                color: 'white',               // texto branco
-                borderRadius: 2,
-                transition: 'all 0.3s',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: 3
-                }
+        <Box sx={{ mt: 3 }}>
+          {loadingEstatisticas ? (
+            <Box textAlign="center" py={2}>
+              <CircularProgress size={20} sx={{ color: 'white' }} />
+              <Typography variant="caption" sx={{ mt: 1, opacity: 0.8, display: 'block' }}>
+                Carregando estatísticas...
+              </Typography>
+            </Box>
+          ) : estatisticas ? (
+            <Grid container spacing={1}>
+              {[
+                { label: 'Pendentes', value: estatisticas.por_status?.pendentes || 0, color: 'warning', icon: <PendingIcon /> },
+                { label: 'Confirmadas', value: estatisticas.por_status?.confirmadas || 0, color: 'success', icon: <CheckCircleIcon /> },
+                { label: 'Recusadas', value: estatisticas.por_status?.recusadas || 0, color: 'error', icon: <CancelIcon /> },
+                { label: 'Total', value: estatisticas.total_inscricoes || 0, color: 'info', icon: <SpeedIcon /> }
+              ].map((stat, index) => (
+                <Grid item xs={6} sm={3} key={index}>
+                  <Card
+                    sx={{
+                      p: isMobile ? 1 : 1.5,
+                      bgcolor: `${stat.color}.main`,
+                      color: 'white',
+                      borderRadius: 1.5,
+                      transition: 'all 0.3s',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: 2
+                      }
+                    }}
+                  >
+                    <Box display="flex" alignItems="center" justifyContent="space-between">
+                      <Box>
+                        <Typography 
+                          variant={isMobile ? "h5" : "h3"} 
+                          fontWeight="bold"
+                          lineHeight={1}
+                        >
+                          {stat.value}
+                        </Typography>
+                        <Typography 
+                          variant={isMobile ? "caption" : "body2"} 
+                          sx={{ opacity: 0.9 }}
+                        >
+                          {isMobile ? stat.label.substring(0, 4) : stat.label}
+                        </Typography>
+                      </Box>
+                      <Avatar 
+                        sx={{ 
+                          bgcolor: 'white',
+                          color: `${stat.color}.main`,
+                          width: isMobile ? 28 : 36,
+                          height: isMobile ? 28 : 36
+                        }}
+                      >
+                        {React.cloneElement(stat.icon, { 
+                          fontSize: isMobile ? "small" : "medium" 
+                        })}
+                      </Avatar>
+                    </Box>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          ) : (
+            <Alert 
+              severity="info" 
+              icon={<InfoIcon />} 
+              sx={{ 
+                bgcolor: 'white', 
+                color: 'black',
+                fontSize: isMobile ? '0.75rem' : '0.875rem'
               }}
             >
-              <Box display="flex" alignItems="center" justifyContent="space-between">
-                <Box>
-                  <Typography variant="h3" fontWeight="bold">
-                    {stat.value}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    {stat.label}
-                  </Typography>
-                </Box>
-                <Avatar 
-                  sx={{ 
-                    bgcolor: 'white',      // avatar com fundo branco
-                    color: `${stat.color}.main`
-                  }}
-                >
-                  {stat.icon}
-                </Avatar>
-              </Box>
-            </Card>
-          </Tooltip>
-        </Grid>
-      ))}
-    </Grid>
-  ) : (
-    <Alert severity="info" icon={<InfoIcon />} sx={{ bgcolor: 'white', color: 'black' }}>
-      <Typography variant="body2">
-        Clique em "Atualizar Dados" para carregar as estatísticas
-      </Typography>
-    </Alert>
-  )}
-</Box>
-
+              <Typography variant={isMobile ? "caption" : "body2"}>
+                Clique em "Atualizar" para carregar estatísticas
+              </Typography>
+            </Alert>
+          )}
+        </Box>
       </Paper>
 
       {/* Filtros e Busca */}
-      <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-        <Grid container spacing={2} alignItems="center">
+      <Paper sx={{ 
+        p: isMobile ? 1.5 : 2, 
+        mb: isMobile ? 2 : 3, 
+        borderRadius: 2 
+      }}>
+        <Grid container spacing={isMobile ? 1 : 2} alignItems="center">
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
@@ -1020,24 +1090,27 @@ const getDownloadUrl = (blobData) => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon color="action" />
+                    <SearchIcon color="action" fontSize={isMobile ? "small" : "medium"} />
                   </InputAdornment>
                 ),
                 endAdornment: searchText && (
                   <InputAdornment position="end">
                     <Tooltip title="Limpar busca" arrow>
-                      <IconButton size="small" onClick={() => setSearchText('')}>
-                        <ClearIcon />
+                      <IconButton 
+                        size={isMobile ? "small" : "medium"} 
+                        onClick={() => setSearchText('')}
+                      >
+                        <ClearIcon fontSize={isMobile ? "small" : "medium"} />
                       </IconButton>
                     </Tooltip>
                   </InputAdornment>
                 )
               }}
-              size="small"
+              size={isMobile ? "small" : "medium"}
             />
           </Grid>
-          <Grid item xs={12} md={4}>
-            <FormControl fullWidth size="small">
+          <Grid item xs={12} sm={6} md={4}>
+            <FormControl fullWidth size={isMobile ? "small" : "medium"}>
               <InputLabel>Categoria</InputLabel>
               <Select
                 value={filtroCategoria}
@@ -1056,33 +1129,41 @@ const getDownloadUrl = (blobData) => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} md={2}>
+          <Grid item xs={12} sm={6} md={2}>
             <Button
               fullWidth
               variant="outlined"
-              startIcon={<FilterIcon />}
+              startIcon={isMobile ? null : <FilterIcon />}
               onClick={handleClearSearch}
               disabled={!searchText && filtroCategoria === 'Todas'}
+              size={isMobile ? "small" : "medium"}
             >
-              Limpar
+              {isMobile ? 'Limpar' : 'Limpar Filtros'}
             </Button>
           </Grid>
         </Grid>
       </Paper>
 
       {/* Tabs */}
-      <Paper sx={{ mb: 3, borderRadius: 2 }}>
+      <Paper sx={{ 
+        mb: isMobile ? 2 : 3, 
+        borderRadius: 2,
+        overflow: 'hidden'
+      }}>
         <Tabs
           value={tabValue}
           onChange={handleTabChange}
           indicatorColor="primary"
           textColor="primary"
-          variant="scrollable"
-          scrollButtons="auto"
+          variant={isMobile ? "scrollable" : "fullWidth"}
+          scrollButtons={isMobile ? "auto" : false}
           sx={{ 
+            minHeight: isMobile ? 48 : 64,
             '& .MuiTab-root': {
               fontWeight: 600,
-              minHeight: 64
+              minHeight: isMobile ? 48 : 64,
+              fontSize: isMobile ? '0.75rem' : '0.875rem',
+              px: isMobile ? 1 : 2
             }
           }}
         >
@@ -1108,14 +1189,23 @@ const getDownloadUrl = (blobData) => {
           ].map((tab, index) => (
             <Tab
               key={index}
+              icon={isMobile ? null : tab.icon}
+              iconPosition="start"
               label={
-                <Box display="flex" alignItems="center" gap={1}>
-                  {tab.icon}
-                  {tab.label}
+                <Box display="flex" alignItems="center" gap={0.5}>
+                  {isMobile && tab.icon}
+                  <span>{isMobile ? tab.label.split(' ')[0] : tab.label}</span>
                   <Badge 
                     badgeContent={tab.count} 
                     color={tab.color}
-                    sx={{ ml: 1 }}
+                    sx={{ 
+                      ml: 0.5,
+                      '& .MuiBadge-badge': {
+                        fontSize: isMobile ? '0.6rem' : '0.75rem',
+                        height: isMobile ? 16 : 20,
+                        minWidth: isMobile ? 16 : 20
+                      }
+                    }}
                   />
                 </Box>
               }
@@ -1125,12 +1215,16 @@ const getDownloadUrl = (blobData) => {
       </Paper>
 
       {/* Conteúdo */}
-      <Paper sx={{ p: 3, borderRadius: 2 }}>
+      <Paper sx={{ 
+        p: isMobile ? 1.5 : 2, 
+        borderRadius: 2,
+        minHeight: 400
+      }}>
         {renderTabContent()}
         
         {inscricoes.length > 0 && (
           <TablePagination
-            rowsPerPageOptions={[10, 25, 50]}
+            rowsPerPageOptions={isMobile ? [5, 10, 25] : [10, 25, 50]}
             component="div"
             count={inscricoes.length}
             rowsPerPage={rowsPerPage}
@@ -1140,9 +1234,16 @@ const getDownloadUrl = (blobData) => {
               setRowsPerPage(parseInt(e.target.value, 10));
               setPage(0);
             }}
-            labelRowsPerPage="Linhas por página:"
-            labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
-            sx={{ mt: 3 }}
+            labelRowsPerPage={isMobile ? "Por página:" : "Linhas por página:"}
+            labelDisplayedRows={({ from, to, count }) => 
+              isMobile ? `${from}-${to}` : `${from}-${to} de ${count}`
+            }
+            sx={{ 
+              mt: 2,
+              '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+                fontSize: isMobile ? '0.75rem' : '0.875rem'
+              }
+            }}
           />
         )}
       </Paper>
@@ -1156,9 +1257,10 @@ const getDownloadUrl = (blobData) => {
         }}
         maxWidth="md"
         fullWidth
+        fullScreen={isMobile}
         PaperProps={{
           sx: { 
-            borderRadius: 3,
+            borderRadius: isMobile ? 0 : 3,
             maxHeight: '90vh'
           }
         }}
@@ -1167,15 +1269,23 @@ const getDownloadUrl = (blobData) => {
           <>
             <DialogTitle sx={{ pb: 1 }}>
               <Box display="flex" alignItems="center" justifyContent="space-between">
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Avatar sx={{ bgcolor: `${getStatusColor(selectedInscricao.status)}.main` }}>
+                <Box display="flex" alignItems="center" gap={1} flex={1}>
+                  <Avatar sx={{ 
+                    bgcolor: `${getStatusColor(selectedInscricao.status)}.main`,
+                    width: isMobile ? 36 : 40,
+                    height: isMobile ? 36 : 40
+                  }}>
                     {getStatusIcon(selectedInscricao.status)}
                   </Avatar>
-                  <Box>
-                    <Typography variant="h5" fontWeight="bold">
-                      Inscrição #{selectedInscricao.codigo}
+                  <Box flex={1} minWidth={0}>
+                    <Typography 
+                      variant={isMobile ? "h6" : "h5"} 
+                      fontWeight="bold"
+                      noWrap
+                    >
+                      #{selectedInscricao.codigo}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary">
                       {formatDateTime(selectedInscricao.dataInscricao)}
                     </Typography>
                   </Box>
@@ -1183,7 +1293,12 @@ const getDownloadUrl = (blobData) => {
                 <Chip
                   label={getStatusLabel(selectedInscricao.status)}
                   color={getStatusColor(selectedInscricao.status)}
-                  sx={{ fontWeight: 600 }}
+                  sx={{ 
+                    fontWeight: 600,
+                    ml: 1,
+                    fontSize: isMobile ? '0.7rem' : '0.875rem'
+                  }}
+                  size={isMobile ? "small" : "medium"}
                 />
               </Box>
             </DialogTitle>
@@ -1192,42 +1307,48 @@ const getDownloadUrl = (blobData) => {
               {renderDialogContent()}
             </DialogContent>
             
-            <DialogActions sx={{ p: 3 }}>
+            <DialogActions sx={{ p: 2 }}>
               <Button 
                 onClick={() => {
                   setOpenDialog(false);
                   setSelectedInscricao(null);
                 }}
                 variant="outlined"
+                size={isMobile ? "small" : "medium"}
+                fullWidth={isMobile}
               >
                 Fechar
               </Button>
               
               {selectedInscricao.status === 'pendente' && (
-                <Stack direction="row" spacing={2}>
-                  <Tooltip title="Aceitar esta inscrição" arrow>
-                    <Button
-                      variant="contained"
-                      color="success"
-                      startIcon={<CheckIcon />}
-                      onClick={() => handleAceitarInscricao(selectedInscricao.id)}
-                    >
-                      Aceitar
-                    </Button>
-                  </Tooltip>
-                  <Tooltip title="Recusar esta inscrição" arrow>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      startIcon={<CloseIcon />}
-                      onClick={() => {
-                        setOpenDialog(false);
-                        setOpenRecusaDialog(true);
-                      }}
-                    >
-                      Recusar
-                    </Button>
-                  </Tooltip>
+                <Stack 
+                  direction={isMobile ? "column" : "row"} 
+                  spacing={1} 
+                  sx={{ width: isMobile ? '100%' : 'auto' }}
+                >
+                  <Button
+                    variant="contained"
+                    color="success"
+                    startIcon={<CheckIcon />}
+                    onClick={() => handleAceitarInscricao(selectedInscricao.id)}
+                    size={isMobile ? "small" : "medium"}
+                    fullWidth={isMobile}
+                  >
+                    Aceitar
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<CloseIcon />}
+                    onClick={() => {
+                      setOpenDialog(false);
+                      setOpenRecusaDialog(true);
+                    }}
+                    size={isMobile ? "small" : "medium"}
+                    fullWidth={isMobile}
+                  >
+                    Recusar
+                  </Button>
                 </Stack>
               )}
             </DialogActions>
@@ -1244,30 +1365,31 @@ const getDownloadUrl = (blobData) => {
         }}
         maxWidth="sm"
         fullWidth
+        fullScreen={isMobile}
         PaperProps={{
-          sx: { borderRadius: 3 }
+          sx: { borderRadius: isMobile ? 0 : 3 }
         }}
       >
-        <DialogTitle>
-          <Box display="flex" alignItems="center" gap={2}>
-            <Avatar sx={{ bgcolor: 'error.main' }}>
-              <WarningIcon />
+        <DialogTitle sx={{ pb: 1 }}>
+          <Box display="flex" alignItems="center" gap={1}>
+            <Avatar sx={{ bgcolor: 'error.main', width: 32, height: 32 }}>
+              <WarningIcon fontSize="small" />
             </Avatar>
             <Box>
-              <Typography variant="h6" fontWeight="bold">
+              <Typography variant={isMobile ? "h6" : "h6"} fontWeight="bold">
                 Recusar Inscrição
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                #{selectedInscricao?.codigo} • {selectedInscricao?.responsavel}
+              <Typography variant="caption" color="text.secondary">
+                #{selectedInscricao?.codigo}
               </Typography>
             </Box>
           </Box>
         </DialogTitle>
         
         <DialogContent>
-          <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
-            <Typography variant="body2" fontWeight="medium">
-              <strong>Atenção:</strong> Esta ação não pode ser desfeita e o responsável será notificado.
+          <Alert severity="warning" sx={{ mb: 2, borderRadius: 1 }}>
+            <Typography variant={isMobile ? "caption" : "body2"} fontWeight="medium">
+              <strong>Atenção:</strong> Esta ação não pode ser desfeita.
             </Typography>
           </Alert>
           
@@ -1275,31 +1397,28 @@ const getDownloadUrl = (blobData) => {
             fullWidth
             label="Motivo da recusa *"
             multiline
-            rows={4}
+            rows={isMobile ? 3 : 4}
             value={motivoRecusa}
             onChange={(e) => setMotivoRecusa(e.target.value)}
-            placeholder="Descreva detalhadamente o motivo da recusa..."
+            placeholder="Descreva o motivo da recusa..."
             margin="normal"
             required
-            helperText="Este motivo será enviado ao responsável pela inscrição"
+            helperText="Este motivo será enviado ao responsável"
             error={!motivoRecusa.trim()}
             sx={{ mb: 2 }}
+            size={isMobile ? "small" : "medium"}
           />
-          
-          <Alert severity="info">
-            <Typography variant="body2">
-              <strong>Dica:</strong> Seja claro e objetivo. Exemplo: "Documentação incompleta" ou "Pagamento não confirmado"
-            </Typography>
-          </Alert>
         </DialogContent>
         
-        <DialogActions sx={{ p: 3 }}>
+        <DialogActions sx={{ p: 2 }}>
           <Button 
             onClick={() => {
               setOpenRecusaDialog(false);
               setMotivoRecusa('');
             }}
             variant="outlined"
+            size={isMobile ? "small" : "medium"}
+            fullWidth={isMobile}
           >
             Cancelar
           </Button>
@@ -1309,6 +1428,8 @@ const getDownloadUrl = (blobData) => {
             onClick={handleRecusarInscricao}
             disabled={!motivoRecusa.trim()}
             startIcon={<CloseIcon />}
+            size={isMobile ? "small" : "medium"}
+            fullWidth={isMobile}
           >
             Confirmar Recusa
           </Button>
@@ -1320,8 +1441,10 @@ const getDownloadUrl = (blobData) => {
         open={snackbar.open}
         autoHideDuration={4000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        TransitionComponent={Fade}
+        anchorOrigin={{ 
+          vertical: isMobile ? 'bottom' : 'bottom', 
+          horizontal: isMobile ? 'center' : 'right' 
+        }}
       >
         <AlertComponent 
           onClose={handleCloseSnackbar} 
@@ -1329,13 +1452,13 @@ const getDownloadUrl = (blobData) => {
           icon={snackbar.icon}
           sx={{ 
             width: '100%',
-            alignItems: 'center',
+            maxWidth: isMobile ? '90vw' : '400px',
             '& .MuiAlert-icon': {
-              fontSize: '1.5rem'
+              fontSize: isMobile ? '1.25rem' : '1.5rem'
             }
           }}
         >
-          <Typography variant="body1" fontWeight="medium">
+          <Typography variant={isMobile ? "body2" : "body1"}>
             {snackbar.message}
           </Typography>
         </AlertComponent>
