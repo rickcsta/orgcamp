@@ -4,13 +4,6 @@ import { put } from '@vercel/blob';
 
 export const runtime = 'nodejs';
 
-export const config = {
-  api: {
-    bodyParser: false,
-    responseLimit: false,
-  },
-};
-
 export async function POST(request) {
   try {
     console.log('=== INICIANDO UPLOAD ===');
@@ -54,10 +47,10 @@ export async function POST(request) {
     }
 
     // Validar tamanho do arquivo (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > 2 * 1024 * 1024) {
       console.error('Erro: Arquivo muito grande:', file.size);
       return NextResponse.json(
-        { error: 'Arquivo muito grande. Tamanho máximo: 5MB' },
+        { error: 'Arquivo muito grande. Tamanho máximo: 2MB' },
         { status: 400 }
       );
     }

@@ -7,11 +7,8 @@ import {
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import DescriptionIcon from '@mui/icons-material/Description';
-import ArticleIcon from '@mui/icons-material/Article';
 import ChecklistIcon from '@mui/icons-material/Checklist';
-import SecurityIcon from '@mui/icons-material/Security';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
-import EventIcon from '@mui/icons-material/Event';
 import PeopleIcon from '@mui/icons-material/People';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -19,9 +16,14 @@ import CloseIcon from '@mui/icons-material/Close';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import Link from 'next/link';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import SportsVolleyballIcon from '@mui/icons-material/SportsVolleyball';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 
 export default function DivulgacaoPage() {
   const [openModal, setOpenModal] = useState(false);
+  const [openVideo, setOpenVideo] = useState(false);
 
   const handleOpenModal = () => {
     setOpenModal(true);
@@ -211,9 +213,8 @@ export default function DivulgacaoPage() {
                     lineHeight: 1.4,
                   }}
                 >
-                  • Inscrições até: 10/06/2024<br/>
                   • Vagas limitadas<br/>
-                  • Dúvidas: contato@evento.com
+                  • Dúvidas: arthuremanuelgl@gmail.com
                 </Typography>
               </Box>
             </Box>
@@ -228,7 +229,7 @@ export default function DivulgacaoPage() {
           minHeight: '100vh', 
           py: { xs: 8, md: 12 },
           px: { xs: 2, md: 4 },
-          backgroundColor: '#ffffff',
+          backgroundColor: '#F5F9F5',
         }}
       >
         <Container maxWidth="lg">
@@ -314,9 +315,7 @@ export default function DivulgacaoPage() {
                           backgroundColor: '#FFD700',
                         }
                       }}
-                      onClick={() => {
-                        
-                      }}
+                      onClick={() => setOpenVideo(true)}
                     >
                       <PlayCircleOutlineIcon sx={{ fontSize: 50 }} />
                     </IconButton>
@@ -330,7 +329,7 @@ export default function DivulgacaoPage() {
             </Box>
 
             <Box sx={{ flex: 1 }}>
-              <Typography variant="h4" sx={{ fontWeight: 700, mb: 4, color: '#1a1a1a' }}>
+              <Typography variant="h5" sx={{ fontWeight: 700, mb: 4, color: '#1a1a1a' }}>
                 SEGUNDA EDIÇÃO
               </Typography>
               
@@ -344,23 +343,13 @@ export default function DivulgacaoPage() {
                   {
                     icon: <CalendarTodayIcon sx={{ color: '#FFD700' }} />,
                     title: 'DATA DO EVENTO',
-                    description: '15-16 de Junho de 2024'
+                    description: '28 FEV - 01 MAR de 2026'
                   },
                   {
                     icon: <LocationOnIcon sx={{ color: '#FFD700' }} />,
                     title: 'LOCAL',
-                    description: 'Praia do Futuro - Fortaleza/CE'
+                    description: 'Quadra Prof. Neto Roque, Lagoa Parque - Remígio - PB'
                   },
-                  {
-                    icon: <PeopleIcon sx={{ color: '#FFD700' }} />,
-                    title: 'PARTICIPANTES',
-                    description: '200 competidores + público'
-                  },
-                  {
-                    icon: <EventIcon sx={{ color: '#FFD700' }} />,
-                    title: 'DURAÇÃO',
-                    description: '2 dias de competições e atividades'
-                  }
                 ].map((item, index) => (
                   <Box 
                     key={index}
@@ -370,7 +359,7 @@ export default function DivulgacaoPage() {
                       gap: 2,
                       p: 2,
                       borderRadius: 2,
-                      backgroundColor: '#FFFDE7',
+                      backgroundColor: '#FFF',
                       borderLeft: '4px solid #FFD700',
                     }}
                   >
@@ -400,7 +389,7 @@ export default function DivulgacaoPage() {
           minHeight: '100vh', 
           py: { xs: 8, md: 12 },
           px: { xs: 2, md: 4 },
-          backgroundColor: '#f8f9fa',
+          backgroundColor: '#F5F9F5',
         }}
       >
         <Container maxWidth="lg">
@@ -505,65 +494,65 @@ export default function DivulgacaoPage() {
               </Typography>
             </Paper>
 
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 4, color: '#1a1a1a' }}>
-                Tópicos Importantes
-              </Typography>
-              
-              <Stack spacing={3}>
-                {[
-                  {
-                    icon: <ChecklistIcon sx={{ color: '#4CAF50' }} />,
-                    title: 'Critérios de Avaliação',
-                    description: 'Entenda como serão avaliados os participantes'
-                  },
-                  {
-                    icon: <SecurityIcon sx={{ color: '#2196F3' }} />,
-                    title: 'Segurança e Saúde',
-                    description: 'Protocolos obrigatórios durante o evento'
-                  },
-                  {
-                    icon: <ArticleIcon sx={{ color: '#FF9800' }} />,
-                    title: 'Documentação Necessária',
-                    description: 'Lista completa de documentos obrigatórios'
-                  },
-                  {
-                    icon: <DescriptionIcon sx={{ color: '#9C27B0' }} />,
-                    title: 'Termos e Condições',
-                    description: 'Leia atentamente antes da inscrição'
-                  }
-                ].map((item, index) => (
-                  <Paper 
-                    key={index}
-                    elevation={1}
-                    sx={{
-                      p: 3,
-                      borderRadius: 3,
-                      backgroundColor: 'white',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 3,
-                      transition: 'all 0.2s',
-                      '&:hover': {
-                        backgroundColor: '#FFFDE7',
-                      }
-                    }}
-                  >
-                    <Box sx={{ fontSize: 32 }}>
-                      {item.icon}
-                    </Box>
-                    <Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                        {item.title}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: '#666' }}>
-                        {item.description}
-                      </Typography>
-                    </Box>
-                  </Paper>
-                ))}
-              </Stack>
-            </Box>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, mb: 4, color: '#1a1a1a' }}>
+              Tópicos Importantes
+            </Typography>
+            
+            <Stack spacing={3}>
+              {[
+                {
+                  icon: <PeopleIcon sx={{ color: '#4CAF50' }} />,
+                  title: 'Categorias',
+                  description: 'Sub-17, Sub-21 e Open (masc. e fem.), considerando apenas o ano de nascimento'
+                },
+                {
+                  icon: <ChecklistIcon sx={{ color: '#2196F3' }} />,
+                  title: 'Inscrições',
+                  description: '15 vagas por categoria. Inscrição válida após formulário e pagamento. Sem reembolso'
+                },
+                {
+                  icon: <SportsVolleyballIcon sx={{ color: '#FF9800' }} />,
+                  title: 'Formato da Disputa',
+                  description: 'Fase de grupos, mata-mata e repescagem para melhor dupla eliminada'
+                },
+                {
+                  icon: <EmojiEventsIcon sx={{ color: '#9C27B0' }} />,
+                  title: 'Premiação',
+                  description: 'Até R$ 350 + troféu e medalhas (mín. 10 equipes por categoria)'
+                }
+              ].map((item, index) => (
+                <Paper 
+                  key={index}
+                  elevation={1}
+                  sx={{
+                    p: 3,
+                    borderRadius: 3,
+                    backgroundColor: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 3,
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      backgroundColor: '#FFFDE7',
+                    }
+                  }}
+                >
+                  <Box sx={{ fontSize: 32 }}>
+                    {item.icon}
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
+                      {item.title}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#666' }}>
+                      {item.description}
+                    </Typography>
+                  </Box>
+                </Paper>
+              ))}
+            </Stack>
+          </Box>
           </Stack>
 
           <Paper 
@@ -587,10 +576,41 @@ export default function DivulgacaoPage() {
             </Typography>
             <Typography variant="body1">
               • Dúvidas sobre o regulamento devem ser encaminhadas para: 
-              <strong> teste@teste.com</strong>
+              <strong> arthuremanuelgl@gmail.com</strong>
             </Typography>
           </Paper>
         </Container>
+            <Dialog
+      open={openVideo}
+      onClose={() => setOpenVideo(false)}
+      maxWidth="md"
+      fullWidth
+    >
+      <DialogContent sx={{ p: 0 }}>
+        <Box
+          sx={{
+            position: 'relative',
+            width: '100%',
+            paddingTop: '56.25%' 
+          }}
+        >
+          <iframe
+            src="https://www.youtube.com/embed/K03Igalphzo?autoplay=1"
+            title="Vídeo do evento"
+            allow="autoplay; encrypted-media"
+            allowFullScreen
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              border: 0
+            }}
+          />
+        </Box>
+      </DialogContent>
+    </Dialog>
       </Box>
     </Box>
   );

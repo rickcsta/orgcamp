@@ -11,11 +11,31 @@ import { Stack,
   FormControlLabel,
 } from '@mui/material';
 import {
-  HowToReg, Person, Email, WhatsApp, Category, CalendarToday,
-  AttachFile, CloudUpload, Info, CheckCircle, PersonAdd,
+  HowToReg, Person, 
+  AttachFile, CloudUpload,  CheckCircle, PersonAdd,
   QrCode, AccountBalance, ContentCopy, AccessTime, ArrowBack,
   Warning, People, PeopleOutline, HourglassEmpty
 } from '@mui/icons-material';
+
+const formatPhone = (value) => {
+  if (!value) return '';
+
+  // remove tudo que não for número
+  const numbers = value.replace(/\D/g, '');
+
+  // (XX) XXXXX-XXXX
+  if (numbers.length <= 10) {
+    return numbers.replace(
+      /(\d{2})(\d{4})(\d{0,4})/,
+      '($1) $2-$3'
+    );
+  }
+
+  return numbers.replace(
+    /(\d{2})(\d{5})(\d{0,4})/,
+    '($1) $2-$3'
+  );
+};
 
 
 const steps = ['Dados da Dupla', 'Documentação', 'Pagamento', 'Confirmação'];
@@ -41,9 +61,9 @@ const calcularIdade = (dataNascimento) => {
 };
 
 const pixInfo = {
-  nome: 'Associação Pernas na Areia',
-  chavePix: '12.345.678/0001-90',
-  banco: 'Banco do Brasil (001)',
+  nome: 'Aldeneide Firmino Pereira',
+  chavePix: '5255e28a-0069-41aa-9cca-4b411fbeeb58',
+  banco: 'Will Bank',
   valor: 'R$ 150,00'
 };
 
@@ -335,8 +355,15 @@ export default function InscricaoPage() {
   };
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const { name, value } = e.target;
+
+  setForm(prev => ({
+    ...prev,
+    [name]: name === 'responsavel_numero'
+      ? formatPhone(value)
+      : value
+  }));
+};
 
   const handleCategoriasChange = (event) => {
     const { value } = event.target;
@@ -385,7 +412,7 @@ export default function InscricaoPage() {
     setForm({ ...form, categorias: novasCategorias });
   };
 
-  const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+  const MAX_SIZE = 2 * 1024 * 1024; 
 const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
 
 const handleFileChange = (e, fileType) => {
@@ -396,7 +423,7 @@ const handleFileChange = (e, fileType) => {
   if (file.size > MAX_SIZE) {
     setSnackbar({
       open: true,
-      message: '❌ Arquivo maior que 5MB',
+      message: '❌ Arquivo maior que 2MB',
       severity: 'error'
     });
     e.target.value = null;
@@ -769,11 +796,13 @@ const handleFileChange = (e, fileType) => {
                     fullWidth
                     label="Número para contato"
                     name="responsavel_numero"
+                    type="tel"
                     value={form.responsavel_numero}
                     onChange={handleChange}
                     required
                     error={!form.responsavel_numero}
                     helperText={!form.responsavel_numero ? "Campo obrigatório" : ""}
+                    inputProps={{ maxLength: 15 }}
                   />
                 </Stack>
               </CardContent>
@@ -1263,7 +1292,7 @@ const handleFileChange = (e, fileType) => {
                       )}
                       
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2 }}>
-                        Tamanho máximo: 5MB • Formatos: PDF, JPG, PNG
+                        Tamanho máximo: 2MB • Formatos: PDF, JPG, PNG
                       </Typography>
                       
                       {!files[`documento_jogador${num}`] && (
@@ -1467,7 +1496,12 @@ const handleFileChange = (e, fileType) => {
                             color="success" 
                             sx={{ mt: 1 }}
                           />
+                          
                         )}
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2,  textAlign: 'center' }}>
+                        Tamanho máximo: 2MB • Formatos: PDF, JPG, PNG
+                        </Typography>
+                        
                         {!comprovanteFile && (
                           <Alert severity="error" sx={{ mt: 2 }}>
                             <Typography variant="body2">
@@ -1558,7 +1592,7 @@ const handleFileChange = (e, fileType) => {
                   {/* QR CODE VISUAL */}
                   <Box sx={{ 
                     width: '100%', 
-                    height: 200, 
+                    height: 300, 
                     bgcolor: '#f8f9fa', 
                     borderRadius: 2,
                     display: 'flex',
@@ -1569,13 +1603,17 @@ const handleFileChange = (e, fileType) => {
                     border: '1px dashed #4CAF50'
                   }}>
                     <Box sx={{ textAlign: 'center' }}>
-                      <QrCode sx={{ fontSize: 60, color: '#4CAF50', mb: 1 }} />
-                      <Typography variant="h6" color="#4CAF50" fontWeight={600}>
-                        QR Code PIX
-                      </Typography>
-                      <Typography variant="h5" fontWeight={700} color="#4CAF50">
-                        {valorFormatado}
-                      </Typography>
+                      {/* Substituindo o ícone pelo QR Code como imagem */}
+                      <Box
+                        component="img"
+                        src="/qrcode.jpeg" // aqui vai o caminho da sua imagem
+                        alt="QR Code PIX"
+                        sx={{
+                          width: 200,    // ajuste o tamanho conforme necessário
+                          height: 200,
+                          mb: 1
+                        }}
+                      />
                     </Box>
                   </Box>
                 </CardContent>

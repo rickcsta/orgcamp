@@ -178,7 +178,7 @@ export default function Footer() {
                     Email
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    teste@gmail.com
+                    arthuremanuelgl@gmail.com
                   </Typography>
                 </Box>
               </Box>
@@ -236,7 +236,7 @@ export default function Footer() {
                 fontWeight: 500,
               }}
             >
-              © {currentYear || '2024'} Campeonato organizado por .... Todos os direitos reservados.
+              © {currentYear || '2024'} Campeonato organizado por <strong>Arthur Emanuel Pereira Lima </strong> Todos os direitos reservados.
             </Typography>
 
            <Typography variant="caption" sx={{ display: 'block', mt: 0.5, opacity: 0.6 }}>

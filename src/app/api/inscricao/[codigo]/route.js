@@ -3,9 +3,11 @@ import pool from '@/lib/db';
 
 export async function GET(request, { params }) {
   try {
-    const codigo = params.codigo;
+    // CORREÇÃO AQUI: params é uma Promise no Next.js 13+
+    const { codigo } = await params;
 
-    if (!codigo || codigo.length < 8) {
+    // Mude para 6 dígitos (seus códigos são de 6 dígitos)
+    if (!codigo || codigo.length < 6) {
       return NextResponse.json(
         { error: 'Código de rastreio inválido' },
         { status: 400 }
@@ -59,7 +61,7 @@ export async function GET(request, { params }) {
         id: dupla.id,
         responsavel_nome: dupla.responsavel_nome,
         responsavel_email: dupla.responsavel_email,
-        responsavel_telefone: dupla.responsavel_telefone,
+        responsavel_numero: dupla.responsavel_numero, // Note: seu banco tem 'responsavel_numero' não 'responsavel_telefone'
         jogador1_nome: dupla.jogador1_nome,
         jogador1_nascimento: dupla.jogador1_nascimento,
         jogador1_camisa: dupla.jogador1_camisa,
@@ -80,6 +82,7 @@ export async function GET(request, { params }) {
         codigo_rastreio: dupla.codigo_rastreio,
         criado_em: dupla.criado_em,
         expira_em: dupla.expira_em,
+        atualizado_em: dupla.atualizado_em,
         documentos_enviados: parseInt(dupla.documentos_enviados),
         comprovante_enviado: parseInt(dupla.comprovante_enviado) > 0,
         arquivos: arquivosResult.rows,

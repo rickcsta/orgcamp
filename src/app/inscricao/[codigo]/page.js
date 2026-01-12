@@ -16,15 +16,49 @@ import {
 } from '@mui/icons-material';
 import Link from 'next/link';
 
-// API
+const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+const ALLOWED_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/jpg',
+  'image/png'
+];
+
+
+// API SIMPLIFICADA E CORRETA
 const api = {
-  async buscarInscricao(codigo) {
-    const response = await fetch(`/api/inscricao/${codigo}`);
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Inscrição não encontrada');
+  async buscarStatus(codigo) {
+    console.log('Buscando inscrição com código:', codigo);
+    try {
+      const response = await fetch(`/api/inscricao/${codigo}`);
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        // Tenta ler o erro da API
+        let errorMessage = 'Erro ao buscar inscrição';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          // Se não conseguir parsear JSON, usa status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+      
+      const data = await response.json();
+      console.log('Dados recebidos da API:', data);
+      
+      // Normalizar campos
+      if (data.dupla) {
+        data.dupla.responsavel_telefone = data.dupla.responsavel_numero || data.dupla.responsavel_telefone;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Erro detalhado na API:', error);
+      throw error;
     }
-    return await response.json();
   },
 
   async uploadFile(codigoRastreio, file) {
@@ -96,9 +130,9 @@ const statusConfig = {
 
 // Informações PIX
 const pixInfo = {
-  nome: 'Associação Pernas na Areia',
-  chavePix: '12.345.678/0001-90',
-  banco: 'Banco do Brasil (001)'
+  nome: 'Aldeneide Firmino Pereira',
+  chavePix: '5255e28a-0069-41aa-9cca-4b411fbeeb58',
+  banco: 'Will Bank',
 };
 
 export default function StatusInscricaoPage() {
@@ -108,7 +142,7 @@ export default function StatusInscricaoPage() {
   
   const [inscricao, setInscricao] = useState(null);
   const [comprovanteFile, setComprovanteFile] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Começa como true para mostrar loading
   const [isUploading, setIsUploading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
@@ -121,16 +155,24 @@ export default function StatusInscricaoPage() {
   }, [codigo]);
 
   const carregarInscricao = async () => {
+    console.log('Iniciando carregamento para código:', codigo);
     setIsLoading(true);
     try {
-      const data = await api.buscarInscricao(codigo);
+      const data = await api.buscarStatus(codigo);
+      console.log('Dados carregados com sucesso:', data);
       setInscricao(data);
       
-      if (data.dupla.time_left > 0) {
+      if (data.dupla?.time_left > 0) {
         setTimeLeft(data.dupla.time_left);
       }
     } catch (error) {
-      setSnackbar({ open: true, message: error.message, severity: 'error' });
+      console.error('Erro ao carregar inscrição:', error);
+      setSnackbar({ 
+        open: true, 
+        message: error.message || 'Erro ao carregar inscrição', 
+        severity: 'error' 
+      });
+      setInscricao(null);
     } finally {
       setIsLoading(false);
     }
@@ -143,6 +185,7 @@ export default function StatusInscricaoPage() {
         setTimeLeft(prev => {
           if (prev <= 1) {
             clearInterval(timer);
+            handleTimeExpired();
             return 0;
           }
           return prev - 1;
@@ -152,7 +195,11 @@ export default function StatusInscricaoPage() {
     }
   }, [timeLeft]);
 
-  // Formatar tempo
+  const handleTimeExpired = () => {
+    setSnackbar({ open: true, message: 'Tempo esgotado! Inscrição cancelada.', severity: 'error' });
+    setTimeout(() => router.push('/inscricao/status'), 3000);
+  };
+
   const formatTime = (seconds) => {
     if (!seconds) return '00:00';
     const minutes = Math.floor(seconds / 60);
@@ -162,15 +209,20 @@ export default function StatusInscricaoPage() {
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch (e) {
+      return dateString;
+    }
   };
 
   const formatCurrency = (valor) => {
+    if (!valor) return 'R$ 0,00';
     return `R$ ${parseFloat(valor).toFixed(2).replace('.', ',')}`;
   };
 
@@ -178,6 +230,11 @@ export default function StatusInscricaoPage() {
   const handleUploadComprovante = async () => {
     if (!comprovanteFile) {
       setSnackbar({ open: true, message: 'Selecione um arquivo', severity: 'warning' });
+      return;
+    }
+
+    if (!inscricao?.dupla?.codigo_rastreio) {
+      setSnackbar({ open: true, message: 'Código de inscrição não encontrado', severity: 'error' });
       return;
     }
 
@@ -202,11 +259,34 @@ export default function StatusInscricaoPage() {
   };
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setComprovanteFile(file);
-    }
-  };
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // 🔒 Validação de tamanho
+  if (file.size > MAX_SIZE) {
+    setSnackbar({
+      open: true,
+      message: '❌ Arquivo maior que 2MB',
+      severity: 'error'
+    });
+    e.target.value = null;
+    return;
+  }
+
+  // 🔒 Validação de tipo
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    setSnackbar({
+      open: true,
+      message: '❌ Tipo inválido. Use PDF, JPG ou PNG',
+      severity: 'error'
+    });
+    e.target.value = null;
+    return;
+  }
+
+  // ✅ Arquivo válido
+  setComprovanteFile(file);
+};
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
@@ -225,14 +305,14 @@ export default function StatusInscricaoPage() {
       <Container maxWidth="md" sx={{ mt: 8, textAlign: 'center' }}>
         <CircularProgress size={60} sx={{ mb: 3 }} />
         <Typography variant="h6" color="text.secondary">
-          Buscando inscrição...
+          Buscando inscrição #{codigo}...
         </Typography>
       </Container>
     );
   }
 
   // Se não encontrou inscrição
-  if (!inscricao) {
+  if (!inscricao || !inscricao.dupla) {
     return (
       <Container maxWidth="md" sx={{ mt: 8 }}>
         <Card sx={{ borderRadius: 3, p: 4, textAlign: 'center' }}>
@@ -241,7 +321,10 @@ export default function StatusInscricaoPage() {
             Inscrição não encontrada
           </Typography>
           <Typography variant="body1" color="text.secondary" paragraph>
-            O código {codigo} não corresponde a nenhuma inscrição válida.
+            O código <strong>#{codigo}</strong> não corresponde a nenhuma inscrição válida.
+          </Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Verifique se o código está correto ou se a inscrição já expirou.
           </Typography>
           <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center' }}>
             <Button 
@@ -292,7 +375,7 @@ export default function StatusInscricaoPage() {
           {dupla.status === 'aguardando_pagamento' && (
             <Alert severity="warning" sx={{ borderRadius: 2 }}>
               <Typography variant="body1" fontWeight={600}>
-                ⚠️ Aguardando envio do comprovante de pagamento
+                 Aguardando envio do comprovante de pagamento
               </Typography>
             </Alert>
           )}
@@ -301,9 +384,6 @@ export default function StatusInscricaoPage() {
             <Alert severity="info" sx={{ borderRadius: 2 }}>
               <Typography variant="body1" fontWeight={600}>
                 📋 Sua inscrição está sendo analisada pela organização
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                Em breve você receberá uma confirmação por e-mail.
               </Typography>
             </Alert>
           )}
@@ -366,37 +446,45 @@ export default function StatusInscricaoPage() {
             Informações da Inscrição
           </Typography>
           
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <Typography variant="body2" color="text.secondary">Responsável:</Typography>
-              <Typography variant="body1" fontWeight={600}>{dupla.responsavel_nome}</Typography>
-              
-              {dupla.responsavel_email && (
-                <>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>E-mail:</Typography>
-                  <Typography variant="body1">{dupla.responsavel_email}</Typography>
-                </>
-              )}
-              
-              {dupla.responsavel_telefone && (
-                <>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>Telefone:</Typography>
-                  <Typography variant="body1">{dupla.responsavel_telefone}</Typography>
-                </>
-              )}
-            </Grid>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="body2" color="text.secondary">Responsável:</Typography>
+            <Typography variant="body2">{dupla.responsavel_nome}</Typography>
             
-            <Grid item xs={12} md={6}>
-              <Typography variant="body2" color="text.secondary">Jogador 1:</Typography>
-              <Typography variant="body1">{dupla.jogador1_nome}</Typography>
-              
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>Jogador 2:</Typography>
-              <Typography variant="body1">{dupla.jogador2_nome}</Typography>
-              
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>Data da inscrição:</Typography>
-              <Typography variant="body1">{formatDate(dupla.criado_em)}</Typography>
-            </Grid>
-          </Grid>
+            {dupla.responsavel_email && (
+              <>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>E-mail:</Typography>
+                <Typography variant="body1">{dupla.responsavel_email}</Typography>
+              </>
+            )}
+            
+            {dupla.responsavel_telefone && (
+              <>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>Telefone:</Typography>
+                <Typography variant="body1">{dupla.responsavel_telefone}</Typography>
+              </>
+            )}
+          </Box>
+          
+          <Divider sx={{ my: 2 }} />
+          
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="body2" color="text.secondary">Jogador 1:</Typography>
+            <Typography variant="body1">{dupla.jogador1_nome}</Typography>
+            <Typography variant="caption" color="text.secondary">
+              Camisa: {dupla.jogador1_camisa?.toUpperCase()}
+            </Typography>
+          </Box>
+          
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="body2" color="text.secondary">Jogador 2:</Typography>
+            <Typography variant="body1">{dupla.jogador2_nome}</Typography>
+            <Typography variant="caption" color="text.secondary">
+              Camisa: {dupla.jogador2_camisa?.toUpperCase()}
+            </Typography>
+          </Box>
+          
+          <Typography variant="body2" color="text.secondary">Data da inscrição:</Typography>
+          <Typography variant="body1">{formatDate(dupla.criado_em)}</Typography>
         </CardContent>
       </Card>
 
@@ -409,7 +497,7 @@ export default function StatusInscricaoPage() {
           </Typography>
           
           <Box sx={{ mb: 2 }}>
-            {dupla.categorias.map((cat, index) => (
+            {dupla.categorias?.map((cat, index) => (
               <Chip 
                 key={index}
                 label={`${cat.nome} ${cat.sexo}`}
@@ -435,102 +523,110 @@ export default function StatusInscricaoPage() {
       {dupla.status === 'aguardando_pagamento' && (
         <>
           {/* INFORMAÇÕES PIX */}
-          <Card sx={{ mb: 3, borderRadius: 3, border: '2px solid #4CAF50' }}>
-            <CardContent>
-              <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <Avatar sx={{ bgcolor: '#4CAF50', width: 80, height: 80, mx: 'auto', mb: 2 }}>
-                  <QrCode fontSize="large" />
-                </Avatar>
-                <Typography variant="h5" fontWeight={700} color="#4CAF50">
-                  PAGAMENTO VIA PIX
-                </Typography>
-              </Box>
+          <Box sx={{ flex: { xs: 'none', md: 1 } }}>
+                        <Card sx={{ 
+                          borderRadius: 3, 
+                          border: '2px solid #4CAF50',
+                          height: '100%'
+                        }}>
+                          <CardContent>
+                            <Box sx={{ textAlign: 'center', mb: 4 }}>
+                              <Avatar sx={{ 
+                                bgcolor: '#4CAF50', 
+                                width: 100, 
+                                height: 100, 
+                                mx: 'auto', 
+                                mb: 3 
+                              }}>
+                                <QrCode fontSize="large" />
+                              </Avatar>
+                              <Typography variant="h5" fontWeight={700} color="#4CAF50" gutterBottom>
+                                Pagamento via PIX
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                Escaneie o QR Code ou use a chave PIX abaixo
+                              </Typography>
+                            </Box>
+          
+                            {/* DADOS DO PIX */}
+                            {[
+                              { label: 'Nome do Beneficiário', value: pixInfo.nome },
+                              { label: 'Chave PIX', value: pixInfo.chavePix }
+                            ].map((item, index) => (
+                              <Box key={index} sx={{ mb: 3 }}>
+                                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                  {item.label}
+                                </Typography>
+                                <Box sx={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  justifyContent: 'space-between', 
+                                  p: 1.5, 
+                                  bgcolor: '#f5f5f5', 
+                                  borderRadius: 1 
+                                }}>
+                                  <Typography variant="body1" fontWeight={600} sx={{ wordBreak: 'break-all' }}>
+                                    {item.value}
+                                  </Typography>
+                                  <Button
+                                    size="small"
+                                    startIcon={<ContentCopy />}
+                                    onClick={() => copyToClipboard(item.value)}
+                                    variant="contained"
+                                    color="primary"
+                                    sx={{ ml: 1, flexShrink: 0 }}
+                                  >
+                                    Copiar
+                                  </Button>
+                                </Box>
+                              </Box>
+                            ))}
+          
+                            {/* BANCO */}
+                            <Box sx={{ p: 2, bgcolor: '#E8F5E9', borderRadius: 2, mt: 3 }}>
+                              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                Banco
+                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <AccountBalance sx={{ mr: 2, color: '#4CAF50', fontSize: 30 }} />
+                                <Typography variant="body1" fontWeight={700} color="#4CAF50">
+                                  {pixInfo.banco}
+                                </Typography>
+                              </Box>
+                            </Box>
+          
+                            {/* QR CODE VISUAL */}
+                            <Box sx={{ 
+                              width: '100%', 
+                              height: 300, 
+                              bgcolor: '#f8f9fa', 
+                              borderRadius: 2,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              mt: 4,
+                              p: 2,
+                              border: '1px dashed #4CAF50'
+                            }}>
+                              <Box sx={{ textAlign: 'center' }}>
+                                {/* Substituindo o ícone pelo QR Code como imagem */}
+                                <Box
+                                  component="img"
+                                  src="/qrcode.jpeg" // aqui vai o caminho da sua imagem
+                                  alt="QR Code PIX"
+                                  sx={{
+                                    width: 200,    // ajuste o tamanho conforme necessário
+                                    height: 200,
+                                    mb: 1
+                                  }}
+                                />
+                              </Box>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      </Box>
 
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Beneficiário
-                </Typography>
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between', 
-                  p: 1.5, 
-                  bgcolor: '#f5f5f5', 
-                  borderRadius: 1 
-                }}>
-                  <Typography variant="body1" fontWeight={600}>
-                    {pixInfo.nome}
-                  </Typography>
-                  <Button
-                    size="small"
-                    startIcon={<ContentCopy />}
-                    onClick={() => copyToClipboard(pixInfo.nome)}
-                    variant="contained"
-                    color="primary"
-                    sx={{ ml: 1 }}
-                  >
-                    Copiar
-                  </Button>
-                </Box>
-              </Box>
-
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Chave PIX (CNPJ)
-                </Typography>
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between', 
-                  p: 1.5, 
-                  bgcolor: '#f5f5f5', 
-                  borderRadius: 1 
-                }}>
-                  <Typography variant="body1" fontWeight={600}>
-                    {pixInfo.chavePix}
-                  </Typography>
-                  <Button
-                    size="small"
-                    startIcon={<ContentCopy />}
-                    onClick={() => copyToClipboard(pixInfo.chavePix)}
-                    variant="contained"
-                    color="primary"
-                    sx={{ ml: 1 }}
-                  >
-                    Copiar
-                  </Button>
-                </Box>
-              </Box>
-
-              <Box sx={{ p: 2, bgcolor: '#E8F5E9', borderRadius: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Banco
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <AccountBalance sx={{ mr: 2, color: '#4CAF50' }} />
-                  <Typography variant="body1" fontWeight={700} color="#4CAF50">
-                    {pixInfo.banco}
-                  </Typography>
-                </Box>
-              </Box>
-
-              <Box sx={{ 
-                mt: 4, 
-                p: 3, 
-                bgcolor: '#f8f9fa', 
-                borderRadius: 2,
-                border: '1px dashed #4CAF50',
-                textAlign: 'center'
-              }}>
-                <Typography variant="h4" fontWeight={800} color="#4CAF50" gutterBottom>
-                  {formatCurrency(dupla.valor_total)}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Valor exato para pagamento
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
+                      <br></br>
 
           {/* UPLOAD DO COMPROVANTE */}
           <Card sx={{ mb: 3, borderRadius: 3 }}>
@@ -582,6 +678,7 @@ export default function StatusInscricaoPage() {
                     </Typography>
                   </Box>
                 )}
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2, textAlign: 'center' }}> Tamanho máximo: 2MB • Formatos: PDF, JPG, PNG </Typography>
               </Box>
 
               <Button
@@ -611,15 +708,6 @@ export default function StatusInscricaoPage() {
           Atualizar Status
         </Button>
         
-        {dupla.status === 'confirmado' && dupla.arquivos?.find(a => a.tipo === 'comprovante') && (
-          <Button
-            variant="contained"
-            startIcon={<Download />}
-            onClick={() => window.open(dupla.arquivos.find(a => a.tipo === 'comprovante').blob_url, '_blank')}
-          >
-            Baixar Comprovante
-          </Button>
-        )}
         
         {dupla.status === 'recusado' && (
           <Link href="/inscricao/nova" passHref>
@@ -629,36 +717,6 @@ export default function StatusInscricaoPage() {
           </Link>
         )}
       </Box>
-
-      {/* DOCUMENTOS ENVIADOS (se houver) */}
-      {dupla.arquivos && dupla.arquivos.length > 0 && (
-        <Card sx={{ mt: 4, borderRadius: 3 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom fontWeight={600} color="primary">
-              <AttachFile sx={{ mr: 1, verticalAlign: 'middle' }} />
-              Documentos Enviados
-            </Typography>
-            
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              {dupla.arquivos.map((arquivo, index) => (
-                <Chip
-                  key={index}
-                  icon={<AttachFile />}
-                  label={
-                    arquivo.tipo === 'documento_jogador1' ? 'Documento Jogador 1' :
-                    arquivo.tipo === 'documento_jogador2' ? 'Documento Jogador 2' :
-                    'Comprovante'
-                  }
-                  variant="outlined"
-                  onClick={() => window.open(arquivo.blob_url, '_blank')}
-                  sx={{ cursor: 'pointer' }}
-                />
-              ))}
-            </Box>
-          </CardContent>
-        </Card>
-      )}
-
       {/* LINK PARA VOLTAR */}
       <Box sx={{ textAlign: 'center', mt: 4 }}>
         <Link href="/inscricao/status" passHref>
@@ -681,6 +739,3 @@ export default function StatusInscricaoPage() {
     </Container>
   );
 }
-
-// Grid component
-import Grid from '@mui/material/Grid';
