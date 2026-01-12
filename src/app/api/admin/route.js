@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { pool } from '@/lib/db';
+import  pool  from '@/lib/db';
 
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN; // token do Vercel Blob
 
