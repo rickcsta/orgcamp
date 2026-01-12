@@ -43,7 +43,7 @@ export default function StatusInscricaoPage() {
     <Container maxWidth="sm" sx={{ mt: 8, mb: 8 }}>
       <Box sx={{ textAlign: 'center', mb: 4 }}>
         <QrCodeScanner color="primary" sx={{ fontSize: 80, mb: 3 }} />
-        <Typography variant="h2" fontWeight={900} color="primary">
+        <Typography variant="h3" fontWeight={900} color="primary">
           ACOMPANHAR INSCRIÇÃO
         </Typography>
         <Typography variant="h6" color="text.secondary">

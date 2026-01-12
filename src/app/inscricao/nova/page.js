@@ -271,58 +271,94 @@ export default function InscricaoPage() {
   const valorTotal = calcularValorTotal();
   const valorFormatado = `R$ ${valorTotal.toFixed(2).replace('.', ',')}`;
 
-  // Validar idade para uma categoria específica
-  const validarIdadeParaCategoria = (idade, categoria) => {
-    if (idade === null) return { valida: false, motivo: 'Data de nascimento inválida' };
-    
-    if (categoria.nome === 'Open') {
-      return { valida: true };
-    }
-    
-    if (idade > categoria.idade_max) {
-      return { 
-        valida: false, 
-        motivo: `Idade ${idade} anos não permite jogar ${categoria.nome} (máximo ${categoria.idade_max} anos)` 
-      };
-    }
-    
-    return { valida: true };
+  /// Validar idade para uma categoria específica
+const validarIdadeParaCategoria = (idade, categoria, numeroJogador = '') => {
+  if (idade === null) return { 
+    valida: false, 
+    motivo: 'Data de nascimento inválida',
+    numeroJogador 
   };
+  
+  if (categoria.nome === 'Open') {
+    return { 
+      valida: true,
+      numeroJogador 
+    };
+  }
+  
+  if (idade > categoria.idade_max) {
+    const categoriaNome = categoria.nome.toUpperCase().includes('SUB') 
+      ? categoria.nome.toUpperCase() 
+      : categoria.nome;
+    
+    return { 
+      valida: false, 
+      motivo: ` não pode participar dessa categoria`,
+      numeroJogador 
+    };
+  }
+  
+  return { 
+    valida: true,
+    numeroJogador 
+  };
+};
 
-  // Validar dupla para múltiplas categorias
-  useEffect(() => {
-    if (form.jogador1_nascimento && form.jogador2_nascimento && form.categorias.length > 0) {
-      const erros = [];
-      
-      form.categorias.forEach(categoriaId => {
-        const categoria = categorias.find(c => c.id === categoriaId);
-        if (categoria) {
-          const validacaoJogador1 = validarIdadeParaCategoria(idadeJogador1, categoria);
-          const validacaoJogador2 = validarIdadeParaCategoria(idadeJogador2, categoria);
+// Validar dupla para múltiplas categorias - APENAS UMA VEZ!
+useEffect(() => {
+  if (form.jogador1_nascimento && form.jogador2_nascimento && form.categorias.length > 0) {
+    const erros = [];
+    
+    form.categorias.forEach(categoriaId => {
+      const categoria = categorias.find(c => c.id === categoriaId);
+      if (categoria) {
+        const validacaoJogador1 = validarIdadeParaCategoria(idadeJogador1, categoria, 1);
+        const validacaoJogador2 = validarIdadeParaCategoria(idadeJogador2, categoria, 2);
+        
+        // Verifica se AMBOS não podem jogar
+        const ambosInvalidos = !validacaoJogador1.valida && !validacaoJogador2.valida;
+        
+        if (ambosInvalidos) {
+          // Mensagem consolidada para ambos os jogadores
+          const categoriaNome = categoria.nome.toUpperCase().includes('SUB') 
+            ? categoria.nome.toUpperCase() 
+            : categoria.nome;
           
+          erros.push({
+            categoria: `${categoriaNome} ${categoria.sexo}`,
+            tipo: 'ambos_invalidos',
+            mensagem: `AMBOS OS JOGADORES NÃO PODEM PARTICIPAR DA CATEGORIA ${categoriaNome} ${categoria.sexo}`,
+            detalhesJogador1: validacaoJogador1.motivo,
+            detalhesJogador2: validacaoJogador2.motivo
+          });
+        } else {
+          // Adiciona erros individuais
           if (!validacaoJogador1.valida) {
             erros.push({
               categoria: `${categoria.nome} ${categoria.sexo}`,
-              jogador1Erro: validacaoJogador1.motivo,
-              jogador2Erro: null
+              tipo: 'jogador1_invalido',
+              mensagem: validacaoJogador1.motivo,
+              jogador: 1
             });
           }
           
           if (!validacaoJogador2.valida) {
             erros.push({
               categoria: `${categoria.nome} ${categoria.sexo}`,
-              jogador1Erro: null,
-              jogador2Erro: validacaoJogador2.motivo
+              tipo: 'jogador2_invalido',
+              mensagem: validacaoJogador2.motivo,
+              jogador: 2
             });
           }
         }
-      });
-      
-      setErrosValidacao(erros);
-    } else {
-      setErrosValidacao([]);
-    }
-  }, [form.jogador1_nascimento, form.jogador2_nascimento, form.categorias, categorias]);
+      }
+    });
+    
+    setErrosValidacao(erros);
+  } else {
+    setErrosValidacao([]);
+  }
+}, [form.jogador1_nascimento, form.jogador2_nascimento, form.categorias, categorias]);
 
   // Contador regressivo
   useEffect(() => {
@@ -569,15 +605,40 @@ const handleFileChange = (e, fileType) => {
       }
       
       // Verificar erros de idade
-      if (errosValidacao.length > 0) {
-        const primeiroErro = errosValidacao[0];
-        setSnackbar({ 
-          open: true, 
-          message: `❌ Não é possível se inscrever na categoria ${primeiroErro.categoria}. ${primeiroErro.jogador1Erro || primeiroErro.jogador2Erro}`,
-          severity: 'error' 
-        });
-        return;
-      }
+      {errosValidacao.length > 0 && (
+  <Alert severity="error" sx={{ mb: 3 }}>
+    <Typography variant="subtitle2" fontWeight={600}>
+      ⚠️ Restrições de idade identificadas:
+    </Typography>
+    <Box sx={{ mt: 1 }}>
+      {errosValidacao.map((erro, index) => (
+        <Box key={index} sx={{ mb: 1.5, p: 1.5, bgcolor: '#fff5f5', borderRadius: 1 }}>
+          <Typography variant="body2" fontWeight={600} color="error.main" sx={{ mb: 1 }}>
+            {erro.categoria}
+          </Typography>
+          
+          {erro.tipo === 'ambos_invalidos' ? (
+            <>
+              <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 600, color: '#d32f2f' }}>
+                • AMBOS OS JOGADORES NÃO PODEM PARTICIPAR
+              </Typography>
+              <Typography variant="body2" sx={{ ml: 2, mb: 0.5, fontSize: '0.9rem' }}>
+                ↳ {erro.detalhesJogador1}
+              </Typography>
+              <Typography variant="body2" sx={{ ml: 2, fontSize: '0.9rem' }}>
+                ↳ {erro.detalhesJogador2}
+              </Typography>
+            </>
+          ) : (
+            <Typography variant="body2" sx={{ ml: 1 }}>
+              • {erro.mensagem}
+            </Typography>
+          )}
+        </Box>
+      ))}
+    </Box>
+  </Alert>
+)}
       
       // Verificar vagas disponíveis
       const categoriasSemVaga = form.categorias.filter(categoriaId => {
@@ -840,20 +901,41 @@ const handleFileChange = (e, fileType) => {
                 )}
 
                 {/* ALERTA DE ERROS DE VALIDAÇÃO */}
-                {errosValidacao.length > 0 && (
-                  <Alert severity="error" sx={{ mb: 3 }}>
-                    <Typography variant="subtitle2" fontWeight={600}>
-                      ⚠️ Restrições de idade identificadas:
-                    </Typography>
-                    <Box sx={{ mt: 1 }}>
-                      {errosValidacao.map((erro, index) => (
-                        <Typography key={index} variant="body2" sx={{ mb: 0.5 }}>
-                          • <strong>{erro.categoria}:</strong> {erro.jogador1Erro || erro.jogador2Erro}
-                        </Typography>
-                      ))}
-                    </Box>
-                  </Alert>
-                )}
+                {/* ALERTA DE ERROS DE VALIDAÇÃO */}
+{errosValidacao.length > 0 && (
+  <Alert severity="error" sx={{ mb: 3 }}>
+    <Typography variant="subtitle2" fontWeight={600}>
+      ⚠️ RESTRIÇÕES DE IDADE IDENTIFICADAS
+    </Typography>
+    <Box sx={{ mt: 1 }}>
+      {errosValidacao.map((erro, index) => (
+        <Box key={index} sx={{ mb: 2, p: 1.5, bgcolor: '#fff5f5', borderRadius: 1, border: '1px solid #ffcdd2' }}>
+          <Typography variant="body2" fontWeight={600} color="error.main" sx={{ mb: 1 }}>
+            {erro.categoria}
+          </Typography>
+          
+          {erro.tipo === 'ambos_invalidos' ? (
+            <>
+              <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 600, color: '#d32f2f', fontSize: '0.9rem' }}>
+                🚫 AMBOS OS JOGADORES NÃO PODEM PARTICIPAR
+              </Typography>
+              <Typography variant="body2" sx={{ ml: 2, mb: 0.5, fontSize: '0.9rem', color: '#666' }}>
+                ↳ Jogador 1: {erro.detalhesJogador1}
+              </Typography>
+              <Typography variant="body2" sx={{ ml: 2, fontSize: '0.9rem', color: '#666' }}>
+                ↳ Jogador 2: {erro.detalhesJogador2}
+              </Typography>
+            </>
+          ) : (
+            <Typography variant="body2" sx={{ ml: 1, fontSize: '0.9rem', color: '#666' }}>
+              • {erro.mensagem}
+            </Typography>
+          )}
+        </Box>
+      ))}
+    </Box>
+  </Alert>
+)}
 
                 {/* Jogador 1 */}
                 <Card variant="outlined" sx={{ mb: 3, p: 2 }}>
@@ -962,121 +1044,211 @@ const handleFileChange = (e, fileType) => {
                 </Card>
 
                 {/* SELEÇÃO DE CATEGORIAS */}
-                <FormControl fullWidth sx={{ mb: 3 }}>
-                  <InputLabel>Categorias</InputLabel>
-                  <Select
-                    multiple
-                    name="categorias"
-                    value={form.categorias}
-                    onChange={handleCategoriasChange}
-                    label="Categorias"
-                    renderValue={(selected) => (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {selected.map((categoriaId) => {
-                          const categoria = categorias.find(c => c.id === parseInt(categoriaId));
-                          const temErro = errosValidacao.some(e => e.categoria === `${categoria?.nome} ${categoria?.sexo}`);
-                          const vaga = vagas[categoriaId];
-                          const semVaga = vaga && vaga.disponiveis === 0;
-                          
-                          return categoria ? (
-                            <Chip 
-                              key={categoriaId} 
-                              label={`${categoria.nome} ${categoria.sexo}`} 
-                              size="small"
-                              color={semVaga ? "error" : temErro ? "warning" : "primary"}
-                              icon={semVaga ? <PeopleOutline /> : temErro ? <Warning /> : undefined}
-                            />
-                          ) : null;
-                        })}
-                      </Box>
+<FormControl fullWidth sx={{ mb: 3 }}>
+  <InputLabel sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>Categorias</InputLabel>
+  <Select
+    multiple
+    name="categorias"
+    value={form.categorias}
+    onChange={handleCategoriasChange}
+    label="Categorias"
+    sx={{
+      '& .MuiSelect-select': {
+        py: { xs: 1.25, sm: 1.5 },
+        fontSize: { xs: '0.875rem', sm: '1rem' }
+      }
+    }}
+    renderValue={(selected) => (
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, py: { xs: 0.5, sm: 1 } }}>
+        {selected.map((categoriaId) => {
+          const categoria = categorias.find(c => c.id === parseInt(categoriaId));
+          const temErro = errosValidacao.some(e => e.categoria === `${categoria?.nome} ${categoria?.sexo}`);
+          const vaga = vagas[categoriaId];
+          const semVaga = vaga && vaga.disponiveis === 0;
+          
+          return categoria ? (
+            <Chip 
+              key={categoriaId} 
+              label={`${categoria.nome} ${categoria.sexo}`} 
+              size="small"
+              sx={{
+                fontSize: { xs: '0.7rem', sm: '0.8rem' },
+                height: { xs: 22, sm: 24 },
+                '& .MuiChip-label': {
+                  px: { xs: 1, sm: 1.5 }
+                }
+              }}
+              color={semVaga ? "error" : temErro ? "warning" : "primary"}
+              icon={semVaga ? <PeopleOutline fontSize="small" /> : temErro ? <Warning fontSize="small" /> : undefined}
+            />
+          ) : null;
+        })}
+      </Box>
+    )}
+  >
+    {categorias.map((cat) => {
+      // Verificar idade
+      let validaParaJogador1 = true;
+      let validaParaJogador2 = true;
+      let motivoJogador1 = '';
+      let motivoJogador2 = '';
+      
+      if (form.jogador1_nascimento) {
+        const validacao = validarIdadeParaCategoria(idadeJogador1, cat, 1);
+        validaParaJogador1 = validacao.valida;
+        motivoJogador1 = validacao.motivo;
+      }
+      
+      if (form.jogador2_nascimento) {
+        const validacao = validarIdadeParaCategoria(idadeJogador2, cat, 2);
+        validaParaJogador2 = validacao.valida;
+        motivoJogador2 = validacao.motivo;
+      }
+      
+      const vaga = vagas[cat.id];
+      const temVaga = vaga && vaga.disponiveis > 0;
+      
+      // Open nunca é desabilitada por idade
+      const disabledPorIdade = (!validaParaJogador1 || !validaParaJogador2) && cat.nome !== 'Open';
+      const disabled = disabledPorIdade || !temVaga;
+      
+      // Verificar se AMBOS não podem
+      const ambosInvalidos = !validaParaJogador1 && !validaParaJogador2;
+      
+      return (
+        <MenuItem 
+          key={cat.id} 
+          value={cat.id}
+          disabled={disabled}
+          sx={{ 
+            opacity: disabled ? 0.6 : 1,
+            bgcolor: disabled ? '#f5f5f5' : 'transparent',
+            py: { xs: 1.5, sm: 2 },
+            '& .MuiCheckbox-root': {
+              py: 0,
+              mr: { xs: 1, sm: 2 }
+            }
+          }}
+        >
+          
+          <ListItemText 
+            primaryTypographyProps={{ 
+              component: 'div',
+              sx: { fontSize: { xs: '0.875rem', sm: '1rem' } }
+            }}
+            secondaryTypographyProps={{ 
+              component: 'div',
+              sx: { fontSize: { xs: '0.75rem', sm: '0.875rem' } }
+            }}
+            primary={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Typography component="span" sx={{ 
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                  fontWeight: 500 
+                }}>
+                  {cat.nome} {cat.sexo}
+                </Typography>
+                {!temVaga && <PeopleOutline color="error" sx={{ fontSize: { xs: 16, sm: 18 } }} />}
+                {disabledPorIdade && cat.nome !== 'Open' && <Warning color="error" sx={{ fontSize: { xs: 16, sm: 18 } }} />}
+              </Box>
+            }
+            secondary={
+              <Box sx={{ mt: { xs: 0.5, sm: 1 } }}>
+                <Box sx={{ mb: 1 }}>
+                  <Typography variant="caption" color="text.secondary" component="span" sx={{ display: 'block', mb: 0.5 }}>
+                    {cat.idade_max ? `Até ${cat.idade_max} anos` : 'Qualquer idade'}
+                  </Typography>
+                  <Typography variant="caption" color="primary" sx={{ 
+                    display: 'block', 
+                    fontWeight: 600,
+                    fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                  }} component="span">
+                    R$ {cat.valor.toFixed(2).replace('.', ',')}
+                  </Typography>
+                </Box>
+                
+                {/* INDICADOR DE VAGAS */}
+                <VagasIndicator categoriaId={cat.id} />
+                
+                {/* MENSAGENS DE ERRO */}
+                {disabledPorIdade && (
+                  <Box sx={{ mt: 1 }}>
+                    {ambosInvalidos ? (
+                      <>
+                        <Typography variant="caption" color="error" sx={{ 
+                          display: 'block', 
+                          mb: 0.5, 
+                          fontWeight: 600,
+                          fontSize: { xs: '0.7rem', sm: '0.75rem' }
+                        }}>
+                          OS JOGADORES NÃO PODEM PARTICIPAR
+                        </Typography>
+                        <Typography variant="caption" color="error" sx={{ 
+                          display: 'block', 
+                          ml: 1, 
+                          mb: 0.5,
+                          fontSize: { xs: '0.7rem', sm: '0.75rem' }
+                        }}>
+                          • {motivoJogador1}
+                        </Typography>
+                        <Typography variant="caption" color="error" sx={{ 
+                          display: 'block', 
+                          ml: 1,
+                          fontSize: { xs: '0.7rem', sm: '0.75rem' }
+                        }}>
+                          • {motivoJogador2}
+                        </Typography>
+                      </>
+                    ) : (
+                      <>
+                        {!validaParaJogador1 && (
+                          <Typography variant="caption" color="error" sx={{ 
+                            display: 'block', 
+                            mb: 0.5,
+                            fontSize: { xs: '0.7rem', sm: '0.75rem' }
+                          }}>
+                            🚫 Jogador 1: {motivoJogador1}
+                          </Typography>
+                        )}
+                        {!validaParaJogador2 && (
+                          <Typography variant="caption" color="error" sx={{ 
+                            display: 'block',
+                            fontSize: { xs: '0.7rem', sm: '0.75rem' }
+                          }}>
+                            🚫 Jogador 2: {motivoJogador2}
+                          </Typography>
+                        )}
+                      </>
                     )}
-                  >
-                    {categorias.map((cat) => {
-                      // Verificar idade
-                      let validaParaJogador1 = true;
-                      let validaParaJogador2 = true;
-                      let motivoJogador1 = '';
-                      let motivoJogador2 = '';
-                      
-                      if (form.jogador1_nascimento) {
-                        const validacao = validarIdadeParaCategoria(idadeJogador1, cat);
-                        validaParaJogador1 = validacao.valida;
-                        motivoJogador1 = validacao.motivo;
-                      }
-                      
-                      if (form.jogador2_nascimento) {
-                        const validacao = validarIdadeParaCategoria(idadeJogador2, cat);
-                        validaParaJogador2 = validacao.valida;
-                        motivoJogador2 = validacao.motivo;
-                      }
-                      
-                      const categoriaValida = validaParaJogador1 && validaParaJogador2;
-                      const vaga = vagas[cat.id];
-                      const temVaga = vaga && vaga.disponiveis > 0;
-                      
-                      // Open nunca é desabilitada por idade
-                      const disabledPorIdade = !categoriaValida && cat.nome !== 'Open';
-                      const disabled = disabledPorIdade || !temVaga;
-                      
-                      return (
-                        <MenuItem 
-                          key={cat.id} 
-                          value={cat.id}
-                          disabled={disabled}
-                          sx={{ 
-                            opacity: disabled ? 0.6 : 1,
-                            bgcolor: disabled ? '#f5f5f5' : 'transparent'
-                          }}
-                        >
-                          
-                          <ListItemText 
-                            primaryTypographyProps={{ component: 'div' }}
-                            secondaryTypographyProps={{ component: 'div' }}
-                            primary={
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Typography component="span">{cat.nome} {cat.sexo}</Typography>
-                                {!temVaga && <PeopleOutline color="error" fontSize="small" />}
-                                {disabledPorIdade && cat.nome !== 'Open' && <Warning color="error" fontSize="small" />}
-                              </Box>
-                            }
-                            secondary={
-                              <Box>
-                                <Typography variant="caption" color="text.secondary" component="span">
-                                  {cat.idade_max ? `Até ${cat.idade_max} anos` : 'Qualquer idade'}
-                                </Typography>
-                                <Typography variant="caption" color="primary" sx={{ display: 'block', fontWeight: 600 }} component="span">
-                                  R$ {cat.valor.toFixed(2).replace('.', ',')}
-                                </Typography>
-                                
-                                {/* INDICADOR DE VAGAS */}
-                                <VagasIndicator categoriaId={cat.id} />
-                                
-                                {/* MENSAGENS DE ERRO */}
-                                {disabledPorIdade && (
-                                  <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }} component="span">
-                                    {!validaParaJogador1 ? `Jogador 1: ${motivoJogador1}` : `Jogador 2: ${motivoJogador2}`}
-                                  </Typography>
-                                )}
-                                
-                                {!temVaga && (
-                                  <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }} component="span">
-                                    ❌ Sem vagas disponíveis
-                                  </Typography>
-                                )}
-                              </Box>
-                            } 
-                          />
-                        </MenuItem>
-                      );
-                    })}
-                  </Select>
-                  {form.categorias.length === 0 && (
-                    <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
-                      Selecione pelo menos uma categoria
-                    </Typography>
-                  )}
-                </FormControl>
-
+                  </Box>
+                )}
+                
+                {!temVaga && (
+                  <Typography variant="caption" color="error" sx={{ 
+                    display: 'block', 
+                    mt: 1,
+                    fontSize: { xs: '0.7rem', sm: '0.75rem' }
+                  }}>
+                    ❌ Sem vagas disponíveis
+                  </Typography>
+                )}
+              </Box>
+            } 
+          />
+        </MenuItem>
+      );
+    })}
+  </Select>
+  {form.categorias.length === 0 && (
+    <Typography variant="caption" color="error" sx={{ 
+      mt: 1, 
+      display: 'block',
+      fontSize: { xs: '0.75rem', sm: '0.875rem' }
+    }}>
+      Selecione pelo menos uma categoria
+    </Typography>
+  )}
+</FormControl>
                 {/* RESUMO DE VAGAS DISPONÍVEIS */}
                 {form.categorias.length > 0 && (
                   <Card variant="outlined" sx={{ mb: 3, p: 2, bgcolor: '#fff8e1', borderColor: '#ffb300' }}>
@@ -1638,7 +1810,7 @@ const handleFileChange = (e, fileType) => {
                   {pagamentoStatus === 'pendente' ? <AccessTime fontSize="large" /> : <CheckCircle fontSize="large" />}
                 </Avatar>
                 <Typography variant="h3" fontWeight={800} color={pagamentoStatus === 'pendente' ? 'warning.main' : 'success.main'} gutterBottom>
-                  {pagamentoStatus === 'pendente' ? 'AGUARDANDO CONFIRMAÇÃO' : 'PAGAMENTO CONFIRMADO!'}
+                  {pagamentoStatus === 'pendente' ? 'PENDENTE' : 'PENDENTE'}
                 </Typography>
                 <Typography variant="h6" color="text.secondary" gutterBottom>
                   {pagamentoStatus === 'pendente' 
@@ -1658,7 +1830,7 @@ const handleFileChange = (e, fileType) => {
                   <Typography variant="h5" color="white" gutterBottom fontWeight={700}>
                     CÓDIGO DE INSCRIÇÃO
                   </Typography>
-                  <Typography variant="h2" fontWeight={900} color="white" sx={{ mb: 2, letterSpacing: 2 }}>
+                  <Typography variant="h3" fontWeight={800} color="white" sx={{ mb: 2, letterSpacing: 2 }}>
                     {inscricaoData?.codigo_rastreio}
                   </Typography>
                   <Alert severity="warning" sx={{ bgcolor: 'rgba(255,255,255,0.9)', borderRadius: 1 }}>
@@ -1770,59 +1942,209 @@ const handleFileChange = (e, fileType) => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 8 }}>
-      <Box sx={{ textAlign: 'center', mb: 4 }}>
-        <HowToReg color="primary" sx={{ fontSize: 80, mb: 3 }} />
-        <Typography variant="h2" fontWeight={900} color="primary">{activeStep === 2 ? 'PAGAMENTO' : activeStep === 3 ? 'CONFIRMAÇÃO' : 'INSCRIÇÃO DA DUPLA'}</Typography>
-      </Box>
-
-      <Stepper activeStep={activeStep} sx={{ mb: 6 }}>
-        {steps.map((label) => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
-      </Stepper>
-
-      <Paper elevation={2} sx={{ p: { xs: 2, md: 4 }, borderRadius: 3 }}>
-        {getStepContent(activeStep)}
-        <Box
-  sx={{
-    display: 'flex',
-    justifyContent: activeStep < 2 ? 'space-between' : 'center',
-    mt: 4,
-    pt: 3,
-    borderTop: '1px solid #e0e0e0'
-  }}
->
-  {activeStep < 2 && (
-    <Button
-      onClick={handleBack}
-      disabled={activeStep === 0 || isLoading}
-      variant="outlined"
-      startIcon={<ArrowBack />}
+    <Container maxWidth="lg" sx={{ 
+  mt: { xs: 2, sm: 3, md: 4 }, 
+  mb: { xs: 4, sm: 6, md: 8 },
+  px: { xs: 1.5, sm: 2, md: 3 }
+}}>
+  <Box sx={{ 
+    textAlign: 'center', 
+    mb: { xs: 3, sm: 4 },
+    px: { xs: 1, sm: 0 }
+  }}>
+    <HowToReg color="primary" sx={{ 
+      fontSize: { xs: 50, sm: 60, md: 80 }, 
+      mb: { xs: 2, sm: 3 }
+    }} />
+    <Typography 
+      variant="h2" 
+      fontWeight={900} 
+      color="primary"
+      sx={{
+        fontSize: { 
+          xs: '1.5rem', 
+          sm: '2rem', 
+          md: '2.5rem',
+          lg: '3rem'
+        },
+        lineHeight: 1.2,
+        wordBreak: 'break-word'
+      }}
     >
-      Voltar
-    </Button>
-  )}
+      {activeStep === 2 ? 'PAGAMENTO' : 
+       activeStep === 3 ? 'CONFIRMAÇÃO' : 
+       'INSCRIÇÃO DA DUPLA'}
+    </Typography>
+  </Box>
 
-  <Button
-    variant="contained"
-    onClick={handleNext}
-    disabled={isNextButtonDisabled()}
+  {/* STEPPER RESPONSIVO */}
+  <Box sx={{ 
+    mb: { xs: 4, sm: 5, md: 6 },
+    overflowX: 'auto',
+    '&::-webkit-scrollbar': {
+      height: 4
+    },
+    '&::-webkit-scrollbar-thumb': {
+      backgroundColor: '#ccc',
+      borderRadius: 2
+    }
+  }}>
+    <Stepper 
+      activeStep={activeStep} 
+      sx={{ 
+        minWidth: 400,
+        px: { xs: 0, sm: 2 },
+        '& .MuiStep-root': {
+          px: { xs: 1, sm: 1.5, md: 2 }
+        }
+      }}
+    >
+      {steps.map((label) => (
+        <Step key={label}>
+          <StepLabel
+            sx={{
+              '& .MuiStepLabel-label': {
+                fontSize: { 
+                  xs: '0.7rem', 
+                  sm: '0.8rem', 
+                  md: '0.9rem' 
+                },
+                fontWeight: 500,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: { xs: 70, sm: 90, md: 120 }
+              }
+            }}
+          >
+            {label}
+          </StepLabel>
+        </Step>
+      ))}
+    </Stepper>
+  </Box>
+
+  <Paper 
+    elevation={2} 
+    sx={{ 
+      p: { 
+        xs: 2,
+        sm: 3,  
+        md: 4
+      }, 
+      borderRadius: 3,
+      mx: { xs: 0.5, sm: 0 }
+    }}
   >
-    {isLoading
-      ? 'Processando...'
-      : activeStep === steps.length - 1
-      ? 'Finalizar'
-      : activeStep === 1
-      ? 'Salvar e Reservar Vagas'
-      : activeStep === 2
-      ? 'Enviar Comprovante'
-      : 'Próximo'}
-  </Button>
-</Box>
-      </Paper>
+    {getStepContent(activeStep)}
+    
+    {/* ÁREA DOS BOTÕES - RESPONSIVA */}
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: { xs: 'column-reverse', sm: 'row' },
+        justifyContent: activeStep < 2 ? 'space-between' : 'center',
+        alignItems: 'center',
+        mt: { xs: 3, sm: 4 },
+        pt: { xs: 2, sm: 3 },
+        borderTop: '1px solid #e0e0e0',
+        gap: { xs: 2, sm: 0 }
+      }}
+    >
+      {/* BOTÃO VOLTAR - Ajustado para mobile */}
+      {activeStep < 2 && (
+        <Button
+          onClick={handleBack}
+          disabled={activeStep === 0 || isLoading}
+          variant="outlined"
+          startIcon={<ArrowBack />}
+          fullWidth={activeStep === 2}
+          sx={{
+            width: { 
+              xs: activeStep === 2 ? '100%' : 'auto', 
+              sm: 'auto' 
+            },
+            minWidth: { xs: 0, sm: 120 },
+            px: { xs: 2, sm: 3 },
+            py: { xs: 1.25, sm: 1.5 }
+          }}
+        >
+          {/* Texto responsivo para botão Voltar */}
+          {(() => {
+            if (window.innerWidth > 600) {
+             return 'Voltar';
+            } else {
+              return 'Voltar';
+            }
+          })()}
+        </Button>
+      )}
 
-      <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={handleCloseSnackbar} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>{snackbar.message}</Alert>
-      </Snackbar>
-    </Container>
+      {/* BOTÃO PRINCIPAL - Ajustado para mobile */}
+      <Button
+        variant="contained"
+        onClick={handleNext}
+        disabled={isNextButtonDisabled()}
+        fullWidth={activeStep === 2}
+        sx={{
+          width: { 
+            xs: activeStep === 2 ? '100%' : 'auto', 
+            sm: 'auto' 
+          },
+          minWidth: { xs: 0, sm: 200 },
+          px: { xs: 3, sm: 4 },
+          py: { xs: 1.5, sm: 1.75 },
+          fontSize: { xs: '0.9rem', sm: '1rem' },
+          fontWeight: 600,
+          whiteSpace: 'nowrap',
+          order: { xs: -1, sm: 0 }
+        }}
+      >
+        {isLoading ? (
+          'Processando...'
+        ) : activeStep === steps.length - 1 ? (
+          'Finalizar'
+        ) : activeStep === 1 ? (
+          // Texto responsivo para etapa 1
+          <>{window.innerWidth < 600 ? 'Reservar Vagas' : 'Salvar e Reservar Vagas'}</>
+        ) : activeStep === 2 ? (
+          // Texto responsivo para etapa 2
+          <>{window.innerWidth < 600 ? 'Enviar' : 'Enviar Comprovante'}</>
+        ) : (
+          'Próximo'
+        )}
+      </Button>
+    </Box>
+  </Paper>
+
+  {/* SNACKBAR RESPONSIVA */}
+  <Snackbar 
+    open={snackbar.open} 
+    autoHideDuration={4000} 
+    onClose={handleCloseSnackbar} 
+    anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+    sx={{
+      '& .MuiSnackbarContent-root': {
+        flexWrap: 'nowrap',
+        maxWidth: { xs: '90vw', sm: '400px' }
+      }
+    }}
+  >
+    <Alert 
+      onClose={handleCloseSnackbar} 
+      severity={snackbar.severity}
+      sx={{ 
+        width: '100%',
+        alignItems: 'center',
+        '& .MuiAlert-message': {
+          overflow: 'hidden',
+          textOverflow: 'ellipsis'
+        }
+      }}
+    >
+      {snackbar.message}
+    </Alert>
+  </Snackbar>
+</Container>
   );
 }
