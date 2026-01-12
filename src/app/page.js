@@ -171,7 +171,7 @@ export default function DivulgacaoPage() {
                 {/* ACOMPANHAR INSCRIÇÃO */}
                 <Button
                   component={Link}
-                  href="/inscricao/acompanhar"
+                  href="/inscricao/status"
                   onClick={handleCloseModal}
                   variant="outlined"
                   startIcon={<VisibilityIcon />}
