@@ -291,7 +291,6 @@ export default function DivulgacaoPage() {
                     sx={{
                       width: '100%',
                       height: '100%',
-                      backgroundImage: "url('/video-thumbnail.jpg')",
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',
                       display: 'flex',
@@ -576,7 +575,7 @@ export default function DivulgacaoPage() {
             </Typography>
             <Typography variant="body1">
               • Dúvidas sobre o regulamento devem ser encaminhadas para: 
-              <strong> arthuremanuelgl@gmail.com</strong>
+              <strong> arthuremanuelgl@gmail.com </strong>
             </Typography>
           </Paper>
         </Container>
