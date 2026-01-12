@@ -96,7 +96,7 @@ export default function DivulgacaoPage() {
         </Button>
       </Box>
 
-      {/* MODAL RESPONSIVO */}
+      {/* MODAL - MANTÉM DESKTOP IGUAL */}
       <Modal
         open={openModal}
         onClose={handleCloseModal}
@@ -116,12 +116,8 @@ export default function DivulgacaoPage() {
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
-              width: { 
-                xs: '90%',      // Mobile
-                sm: '380px',    // Tablet
-                md: '400px'     // Notebook/Desktop
-              },
-              maxWidth: '95vw',
+              width: { xs: '90%', sm: '95%', md: '400px' },
+              maxWidth: '400px',
               bgcolor: 'background.paper',
               borderRadius: 3,
               boxShadow: 24,
@@ -131,8 +127,8 @@ export default function DivulgacaoPage() {
           >
             <Box
               sx={{
-                p: { xs: 2.5, sm: 3 },
-                pb: { xs: 1.5, sm: 2 },
+                p: { xs: 2.5, md: 3 },
+                pb: { xs: 2, md: 2 },
                 borderBottom: '1px solid #eee',
                 position: 'relative',
               }}
@@ -156,14 +152,14 @@ export default function DivulgacaoPage() {
                   fontWeight: 700,
                   color: '#1a1a1a',
                   textAlign: 'center',
-                  fontSize: { xs: '1.3rem', sm: '1.5rem' }
+                  fontSize: { xs: '1.25rem', md: '1.5rem' }
                 }}
               >
                 Inscrições
               </Typography>
             </Box>
 
-            <Box sx={{ p: { xs: 2.5, sm: 3 } }}>
+            <Box sx={{ p: { xs: 2.5, md: 3 } }}>
               <Stack spacing={2}>
                 <Button
                   component={Link}
@@ -173,11 +169,11 @@ export default function DivulgacaoPage() {
                   startIcon={<EditNoteIcon />}
                   fullWidth
                   sx={{
-                    py: { xs: 1.5, sm: 2 },
+                    py: { xs: 1.5, md: 2 },
                     backgroundColor: '#FFD700',
                     color: '#1a1a1a',
                     fontWeight: 600,
-                    fontSize: { xs: '0.9rem', sm: '1rem' },
+                    fontSize: { xs: '0.9rem', md: '1rem' },
                     borderRadius: 2,
                     '&:hover': {
                       backgroundColor: '#FFC400',
@@ -195,11 +191,11 @@ export default function DivulgacaoPage() {
                   startIcon={<VisibilityIcon />}
                   fullWidth
                   sx={{
-                    py: { xs: 1.5, sm: 2 },
+                    py: { xs: 1.5, md: 2 },
                     borderColor: '#ddd',
                     color: '#555',
                     fontWeight: 600,
-                    fontSize: { xs: '0.9rem', sm: '1rem' },
+                    fontSize: { xs: '0.9rem', md: '1rem' },
                     borderRadius: 2,
                     '&:hover': {
                       borderColor: '#FFD700',
@@ -224,7 +220,7 @@ export default function DivulgacaoPage() {
                   variant="caption"
                   sx={{
                     color: '#666',
-                    fontSize: { xs: '0.75rem', sm: '0.8rem' },
+                    fontSize: { xs: '0.75rem', md: '0.8rem' },
                     lineHeight: 1.4,
                   }}
                 >
@@ -241,26 +237,21 @@ export default function DivulgacaoPage() {
       <Box 
         id="sobre" 
         sx={{ 
-          minHeight: { xs: 'auto', md: '100vh' }, 
-          py: { xs: 5, sm: 8, md: 12 },
+          minHeight: '100vh', 
+          py: { xs: 6, sm: 8, md: 12 },
           px: { xs: 2, sm: 3, md: 4 },
           backgroundColor: '#F5F9F5',
         }}
       >
         <Container maxWidth="lg">
-          <Box sx={{ textAlign: 'center', mb: { xs: 5, sm: 6, md: 8 } }}>
+          <Box sx={{ textAlign: 'center', mb: { xs: 6, md: 8 } }}>
             <Typography 
               variant="h2" 
               sx={{ 
                 fontWeight: 800,
                 color: '#1a1a1a',
                 mb: 2,
-                fontSize: { 
-                  xs: '2rem', 
-                  sm: '2.5rem', 
-                  md: '3rem',
-                  lg: '3.5rem' 
-                }
+                fontSize: { xs: '2rem', sm: '2.5rem', md: '3.5rem' }
               }}
             >
               SOBRE O EVENTO
@@ -271,20 +262,20 @@ export default function DivulgacaoPage() {
                 color: '#666',
                 maxWidth: '800px',
                 mx: 'auto',
-                mb: { xs: 4, sm: 5, md: 6 },
-                fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' }
+                mb: 6,
+                fontSize: { xs: '1rem', md: '1.25rem' }
               }}
             >
               Conheça a segunda edição do PERNAS NA AREIA
             </Typography>
           </Box>
 
-          <Grid 
-            container 
+          <Stack 
+            direction={{ xs: 'column', md: 'row' }} 
             spacing={{ xs: 4, md: 6 }}
-            sx={{ mb: { xs: 6, md: 8 } }}
+            sx={{ mb: 8 }}
           >
-            <Grid item xs={12} md={6}>
+            <Box sx={{ flex: 1 }}>
               <Paper 
                 elevation={3}
                 sx={{
@@ -292,7 +283,7 @@ export default function DivulgacaoPage() {
                   overflow: 'hidden',
                   position: 'relative',
                   backgroundColor: '#000',
-                  minHeight: { xs: '280px', sm: '340px', md: '400px' },
+                  minHeight: { xs: '300px', sm: '350px', md: '400px' },
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -317,8 +308,8 @@ export default function DivulgacaoPage() {
                     sx={{
                       backgroundColor: 'rgba(255, 215, 0, 0.8)',
                       color: '#fff',
-                      width: { xs: 60, sm: 70, md: 80 },
-                      height: { xs: 60, sm: 70, md: 80 },
+                      width: { xs: 70, md: 80 },
+                      height: { xs: 70, md: 80 },
                       transition: 'all 0.3s ease',
                       '&:hover': {
                         backgroundColor: '#FFD700',
@@ -326,7 +317,7 @@ export default function DivulgacaoPage() {
                     }}
                     onClick={() => setOpenVideo(true)}
                   >
-                    <PlayCircleOutlineIcon sx={{ fontSize: { xs: 35, sm: 40, md: 50 } }} />
+                    <PlayCircleOutlineIcon sx={{ fontSize: { xs: 40, md: 50 } }} />
                   </IconButton>
                 </Box>
               </Paper>
@@ -336,33 +327,33 @@ export default function DivulgacaoPage() {
                 mt: 2, 
                 textAlign: 'center', 
                 color: '#666',
-                fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                fontSize: { xs: '0.8rem', md: '0.875rem' }
               }}>
                 Assista ao vídeo da primeira edição
               </Typography>
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} md={6}>
+            <Box sx={{ flex: 1 }}>
               <Typography variant="h5" sx={{ 
                 fontWeight: 700, 
-                mb: { xs: 3, md: 4 }, 
+                mb: 4, 
                 color: '#1a1a1a',
-                fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' }
+                fontSize: { xs: '1.5rem', md: '2rem' }
               }}>
                 SEGUNDA EDIÇÃO
               </Typography>
               
               <Typography variant="body1" sx={{ 
-                mb: { xs: 3, md: 4 }, 
+                mb: 4, 
                 color: '#555', 
                 lineHeight: 1.8,
-                fontSize: { xs: '0.95rem', sm: '1rem', md: '1.05rem' }
+                fontSize: { xs: '0.95rem', md: '1rem' }
               }}>
                 O <strong>PERNAS NA AREIA</strong> é um evento esportivo que reúne amantes de vôlei
                 em uma competição saudável e divertida. Em sua segunda edição, prometemos superar todas as expectativas.
               </Typography>
               
-              <Stack spacing={2} sx={{ mb: 4 }}>
+              <Stack spacing={3} sx={{ mb: 4 }}>
                 {[
                   {
                     icon: <CalendarTodayIcon sx={{ color: '#FFD700' }} />,
@@ -380,28 +371,28 @@ export default function DivulgacaoPage() {
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: { xs: 1.5, sm: 2 },
-                      p: { xs: 1.5, sm: 2 },
+                      gap: 2,
+                      p: { xs: 1.5, md: 2 },
                       borderRadius: 2,
                       backgroundColor: '#FFF',
                       borderLeft: '4px solid #FFD700',
                     }}
                   >
-                    <Box sx={{ fontSize: { xs: 24, sm: 28 } }}>
+                    <Box sx={{ fontSize: { xs: 24, md: 28 } }}>
                       {item.icon}
                     </Box>
                     <Box>
                       <Typography variant="subtitle2" sx={{ 
                         fontWeight: 600, 
                         color: '#555',
-                        fontSize: { xs: '0.85rem', sm: '0.9rem' }
+                        fontSize: { xs: '0.85rem', md: '0.9rem' }
                       }}>
                         {item.title}
                       </Typography>
                       <Typography variant="body1" sx={{ 
                         fontWeight: 700, 
                         color: '#1a1a1a',
-                        fontSize: { xs: '0.9rem', sm: '1rem' }
+                        fontSize: { xs: '0.9rem', md: '1rem' }
                       }}>
                         {item.description}
                       </Typography>
@@ -409,8 +400,8 @@ export default function DivulgacaoPage() {
                   </Box>
                 ))}
               </Stack>
-            </Grid>
-          </Grid>
+            </Box>
+          </Stack>
         </Container>
       </Box>
 
@@ -418,26 +409,21 @@ export default function DivulgacaoPage() {
       <Box 
         id="regulamentacao" 
         sx={{ 
-          minHeight: { xs: 'auto', md: '100vh' }, 
-          py: { xs: 5, sm: 8, md: 12 },
+          minHeight: '100vh', 
+          py: { xs: 6, sm: 8, md: 12 },
           px: { xs: 2, sm: 3, md: 4 },
           backgroundColor: '#F5F9F5',
         }}
       >
         <Container maxWidth="lg">
-          <Box sx={{ textAlign: 'center', mb: { xs: 5, sm: 6, md: 8 } }}>
+          <Box sx={{ textAlign: 'center', mb: { xs: 6, md: 8 } }}>
             <Typography 
               variant="h2" 
               sx={{ 
                 fontWeight: 800,
                 color: '#1a1a1a',
                 mb: 2,
-                fontSize: { 
-                  xs: '2rem', 
-                  sm: '2.5rem', 
-                  md: '3rem',
-                  lg: '3.5rem' 
-                }
+                fontSize: { xs: '2rem', sm: '2.5rem', md: '3.5rem' }
               }}
             >
               REGULAMENTAÇÃO
@@ -448,125 +434,124 @@ export default function DivulgacaoPage() {
                 color: '#666',
                 maxWidth: '800px',
                 mx: 'auto',
-                mb: { xs: 4, sm: 5, md: 6 },
-                fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' }
+                mb: 6,
+                fontSize: { xs: '1rem', md: '1.25rem' }
               }}
             >
               Conheça as regras oficiais do evento e garanta sua participação
             </Typography>
           </Box>
 
-          <Grid 
-            container 
+          <Stack 
+            direction={{ xs: 'column', md: 'row' }} 
             spacing={{ xs: 4, md: 6 }}
-            sx={{ mb: { xs: 6, md: 8 } }}
+            sx={{ mb: 8 }}
           >
-            <Grid item xs={12} md={6}>
-              <Paper 
-                elevation={3}
+            <Paper 
+              elevation={3}
+              sx={{
+                flex: 1,
+                p: { xs: 3, sm: 4, md: 5 },
+                borderRadius: 4,
+                backgroundColor: 'white',
+                border: '2px solid #FFD700',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                transition: 'transform 0.3s, box-shadow 0.3s',
+                '&:hover': {
+                  transform: 'translateY(-8px)',
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+                }
+              }}
+            >
+              <Box
                 sx={{
-                  p: { xs: 3, sm: 4, md: 5 },
-                  borderRadius: 4,
-                  backgroundColor: 'white',
-                  border: '2px solid #FFD700',
+                  width: { xs: 80, md: 100 },
+                  height: { xs: 80, md: 100 },
+                  borderRadius: '50%',
+                  backgroundColor: '#FFF9C4',
                   display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
-                  textAlign: 'center',
-                  transition: 'transform 0.3s, box-shadow 0.3s',
-                  '&:hover': {
-                    transform: 'translateY(-8px)',
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
-                  }
+                  justifyContent: 'center',
+                  mb: { xs: 3, md: 4 },
+                  border: '3px solid #FFD700'
                 }}
               >
-                <Box
-                  sx={{
-                    width: { xs: 80, sm: 90, md: 100 },
-                    height: { xs: 80, sm: 90, md: 100 },
-                    borderRadius: '50%',
-                    backgroundColor: '#FFF9C4',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    mb: { xs: 3, md: 4 },
-                    border: '3px solid #FFD700'
-                  }}
-                >
-                  <DescriptionIcon sx={{ 
-                    fontSize: { xs: 35, sm: 40, md: 50 }, 
-                    color: '#F57C00' 
-                  }} />
-                </Box>
-                
-                <Typography variant="h5" sx={{ 
-                  fontWeight: 700, 
-                  mb: 2, 
-                  color: '#1a1a1a',
-                  fontSize: { xs: '1.3rem', sm: '1.5rem', md: '1.75rem' }
-                }}>
-                  Documento Oficial
-                </Typography>
-                
-                <Typography variant="body1" sx={{ 
-                  mb: { xs: 3, md: 4 }, 
-                  color: '#666',
-                  fontSize: { xs: '0.9rem', sm: '1rem' }
-                }}>
-                  Regulamento completo da segunda edição do PERNAS NA AREIA com todas as regras, direitos e deveres dos participantes.
-                </Typography>
-                
-                <Box sx={{ 
-                  display: 'flex', 
-                  gap: 2, 
-                  flexWrap: 'wrap', 
-                  justifyContent: 'center',
-                  width: '100%'
-                }}>
-                  <Button
-                    variant="contained"
-                    startIcon={<DownloadIcon />}
-                    href="/regulamento-oficial.pdf" 
-                    download="Regulamento_Pernas_Na_Areia_2025.pdf"
-                    sx={{
-                      backgroundColor: '#FFD700',
-                      color: '#1a1a1a',
-                      fontWeight: 700,
-                      px: { xs: 3, sm: 4 },
-                      py: { xs: 1, sm: 1.5 },
-                      borderRadius: 3,
-                      fontSize: { xs: '0.85rem', sm: '0.9rem', md: '1rem' },
-                      '&:hover': {
-                        backgroundColor: '#FFC400',
-                        transform: 'translateY(-2px)',
-                      }
-                    }}
-                  >
-                    BAIXAR PDF
-                  </Button>
-                </Box>
-                
-                <Typography variant="caption" sx={{ 
-                  mt: { xs: 3, md: 4 }, 
-                  color: '#999',
-                  fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                }}>
-                  Tamanho: 144 KB
-                </Typography>
-              </Paper>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
+                <DescriptionIcon sx={{ 
+                  fontSize: { xs: 35, md: 50 }, 
+                  color: '#F57C00' 
+                }} />
+              </Box>
+              
               <Typography variant="h5" sx={{ 
                 fontWeight: 700, 
-                mb: { xs: 3, md: 4 }, 
+                mb: 2, 
                 color: '#1a1a1a',
-                fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' }
+                fontSize: { xs: '1.3rem', md: '1.5rem' }
+              }}>
+                Documento Oficial
+              </Typography>
+              
+              <Typography variant="body1" sx={{ 
+                mb: { xs: 3, md: 4 }, 
+                color: '#666',
+                fontSize: { xs: '0.9rem', md: '1rem' }
+              }}>
+                Regulamento completo da segunda edição do PERNAS NA AREIA com todas as regras, direitos e deveres dos participantes.
+              </Typography>
+              
+              <Box sx={{ 
+                display: 'flex', 
+                gap: 2, 
+                flexWrap: 'wrap', 
+                justifyContent: 'center',
+                width: '100%'
+              }}>
+                <Button
+                  variant="contained"
+                  startIcon={<DownloadIcon />}
+                  href="/regulamento-oficial.pdf" 
+                  download="Regulamento_Pernas_Na_Areia_2025.pdf"
+                  sx={{
+                    backgroundColor: '#FFD700',
+                    color: '#1a1a1a',
+                    fontWeight: 700,
+                    px: { xs: 3, md: 4 },
+                    py: { xs: 1, md: 1.5 },
+                    borderRadius: 3,
+                    fontSize: { xs: '0.85rem', md: '1rem' },
+                    '&:hover': {
+                      backgroundColor: '#FFC400',
+                      transform: 'translateY(-2px)',
+                    }
+                  }}
+                >
+                  BAIXAR PDF
+                </Button>
+              </Box>
+              
+              <Typography variant="caption" sx={{ 
+                mt: { xs: 3, md: 4 }, 
+                color: '#999',
+                fontSize: { xs: '0.75rem', md: '0.875rem' }
+              }}>
+                Tamanho: 144 KB
+              </Typography>
+            </Paper>
+
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="h5" sx={{ 
+                fontWeight: 700, 
+                mb: 4, 
+                color: '#1a1a1a',
+                fontSize: { xs: '1.5rem', md: '2rem' }
               }}>
                 Tópicos Importantes
               </Typography>
               
-              <Stack spacing={2}>
+              <Stack spacing={3}>
                 {[
                   {
                     icon: <PeopleIcon sx={{ color: '#4CAF50' }} />,
@@ -593,32 +578,32 @@ export default function DivulgacaoPage() {
                     key={index}
                     elevation={1}
                     sx={{
-                      p: { xs: 2, sm: 2.5, md: 3 },
+                      p: { xs: 2, md: 3 },
                       borderRadius: 3,
                       backgroundColor: 'white',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: { xs: 2, sm: 3 },
+                      gap: { xs: 2, md: 3 },
                       transition: 'all 0.2s',
                       '&:hover': {
                         backgroundColor: '#FFFDE7',
                       }
                     }}
                   >
-                    <Box sx={{ fontSize: { xs: 28, sm: 32 } }}>
+                    <Box sx={{ fontSize: { xs: 28, md: 32 } }}>
                       {item.icon}
                     </Box>
                     <Box sx={{ flex: 1 }}>
                       <Typography variant="subtitle1" sx={{ 
                         fontWeight: 600, 
                         mb: 0.5,
-                        fontSize: { xs: '0.95rem', sm: '1rem' }
+                        fontSize: { xs: '0.95rem', md: '1rem' }
                       }}>
                         {item.title}
                       </Typography>
                       <Typography variant="body2" sx={{ 
                         color: '#666',
-                        fontSize: { xs: '0.85rem', sm: '0.9rem' }
+                        fontSize: { xs: '0.85rem', md: '0.9rem' }
                       }}>
                         {item.description}
                       </Typography>
@@ -626,13 +611,13 @@ export default function DivulgacaoPage() {
                   </Paper>
                 ))}
               </Stack>
-            </Grid>
-          </Grid>
+            </Box>
+          </Stack>
 
           <Paper 
             elevation={2}
             sx={{
-              p: { xs: 3, sm: 4 },
+              p: { xs: 3, md: 4 },
               borderRadius: 3,
               backgroundColor: '#FFF3E0',
               borderLeft: '6px solid #FF9800',
@@ -643,24 +628,24 @@ export default function DivulgacaoPage() {
               fontWeight: 700, 
               mb: 2, 
               color: '#E65100',
-              fontSize: { xs: '1.1rem', sm: '1.25rem' }
+              fontSize: { xs: '1.1rem', md: '1.25rem' }
             }}>
               ⚠️ ATENÇÃO
             </Typography>
             <Typography variant="body1" sx={{ 
               mb: 1.5,
-              fontSize: { xs: '0.9rem', sm: '1rem' }
+              fontSize: { xs: '0.9rem', md: '1rem' }
             }}>
               • A leitura completa do regulamento é <strong>obrigatória</strong> para todos os participantes
             </Typography>
             <Typography variant="body1" sx={{ 
               mb: 1.5,
-              fontSize: { xs: '0.9rem', sm: '1rem' }
+              fontSize: { xs: '0.9rem', md: '1rem' }
             }}>
               • O não cumprimento de qualquer item do regulamento poderá resultar em desclassificação
             </Typography>
             <Typography variant="body1" sx={{ 
-              fontSize: { xs: '0.9rem', sm: '1rem' }
+              fontSize: { xs: '0.9rem', md: '1rem' }
             }}>
               • Dúvidas sobre o regulamento devem ser encaminhadas para: 
               <strong> arthuremanuelgl@gmail.com </strong>
@@ -675,9 +660,9 @@ export default function DivulgacaoPage() {
           fullWidth
           sx={{
             '& .MuiDialog-paper': {
-              margin: { xs: 2, sm: 3 },
+              margin: { xs: 2, md: 3 },
               width: '100%',
-              maxWidth: { xs: '95vw', sm: '90vw', md: '800px' },
+              maxWidth: { xs: '95vw', md: '800px' },
             }
           }}
         >
