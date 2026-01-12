@@ -146,20 +146,18 @@ export async function GET(request) {
         codigo: row.codigo,
         responsavel: row.responsavel_nome,
         email: row.responsavel_email,
-        telefone: row.responsavel_numero,
+        telefone: row.telefone || row.responsavel_numero || '', 
         jogador1: {
           nome: row.jogador1_nome,
           nascimento: row.jogador1_nascimento,
           idade: calcularIdade(row.jogador1_nascimento),
           camisa: row.jogador1_camisa,
-          tamanho: 'G' // Padrão, pode ser ajustado se tiver campo no banco
         },
         jogador2: {
           nome: row.jogador2_nome,
           nascimento: row.jogador2_nascimento,
           idade: calcularIdade(row.jogador2_nascimento),
           camisa: row.jogador2_camisa,
-          tamanho: 'G'
         },
         categorias: categoriasArray,
         categoria: categoriasArray.map(c => `${c.nome} - ${c.sexo}`).join(', '),
