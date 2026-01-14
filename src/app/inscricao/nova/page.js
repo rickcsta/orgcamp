@@ -1642,8 +1642,24 @@ const handleFileChange = (e, fileType) => {
                           </Typography>
                           <Alert severity="warning" sx={{ bgcolor: 'rgba(255,255,255,0.9)' }}>
                             <Typography variant="body2" fontWeight={600} align="center">
-                               SALVE ESTE CÓDIGO! ELE SERÁ UTILIZADO PARA VIZUALIZAR O STATUS DA SUA INSCRIÇÃO!
-                            </Typography>
+  SALVE ESTE CÓDIGO!
+  <br />
+  Ele será utilizado para acompanhar o status da sua inscrição.
+  <br /><br />
+
+  ⚠️ Atenção: este código não será exibido novamente caso você saia ou feche esta página.
+  <br />
+  Salve-o ou tire um print.
+  <br /><br />
+
+  ✅ Caso a página seja fechada, você poderá finalizar a inscrição (pagamento)
+  <br />
+  na área “Acompanhar Inscrição”, utilizando este código.
+  <br /><br />
+
+  ❌ Se perder o código, será necessário realizar uma nova inscrição.
+</Typography>
+
                           </Alert>
                         </CardContent>
                       </Card>

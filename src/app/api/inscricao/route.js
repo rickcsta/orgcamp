@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { limparDuplasExpiradas } from '@/lib/limparDuplasExpiradas';
+
 
 // Função para gerar código de 6 dígitos
 function gerarCodigo6Digitos() {
@@ -34,10 +34,6 @@ function validarIdadeParaCategoria(idade, categoria) {
 export async function POST(request) {
   try {
     console.log('=== CRIANDO INSCRIÇÃO ===');
-
-    // Limpeza on-demand antes de processar nova inscrição
-    const canceladas = await limparDuplasExpiradas();
-    console.log(`Limpeza on-demand: ${canceladas} duplas expiradas canceladas`);
     
     const data = await request.json();
     console.log('Dados recebidos:', data);

@@ -1,8 +1,16 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { limparDuplasExpiradas } from '@/lib/limparDuplasExpiradas';
 
 export async function GET() {
   try {
+
+    console.log('=== BUSCANDO CATEGORIAS ===');
+
+    // Limpeza automática antes de calcular vagas
+    const expiradasRemovidas = await limparDuplasExpiradas();
+console.log(`Limpeza automática: ${expiradasRemovidas} duplas expiradas`);
+
     const result = await pool.query(`
       SELECT 
         c.id,
