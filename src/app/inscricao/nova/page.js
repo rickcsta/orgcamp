@@ -300,7 +300,43 @@ const validarIdadeParaCategoria = (idade, categoria, numeroJogador = '') => {
     numeroJogador 
   };
   
+  // Categoria Open não tem restrição de idade
   if (categoria.nome === 'Open') {
+    return { 
+      valida: true,
+      numeroJogador 
+    };
+  }
+  
+  const categoriaNome = categoria.nome.toUpperCase();
+  const hoje = new Date();
+  const anoAtual = hoje.getFullYear(); // 2026
+  
+  // REGRA ESPECIAL APENAS PARA SUB 21
+  if (categoriaNome === 'SUB 21') {
+    // Para Sub 21 em 2026: apenas nascidos em 2005 ou depois
+    const anoMinimo = 2005;
+    
+    // Obter ano de nascimento do jogador
+    const anoNascimento = new Date(form[`jogador${numeroJogador}_nascimento`]).getFullYear();
+    
+    if (anoNascimento < anoMinimo) {
+      return { 
+        valida: false, 
+        motivo: `não pode participar dessa categoria`,
+        numeroJogador 
+      };
+    }
+    
+    // Além disso, verificar idade máxima (21 anos)
+    if (idade > 21) {
+      return { 
+        valida: false, 
+        motivo: `não pode participar dessa categoria`,
+        numeroJogador 
+      };
+    }
+    
     return { 
       valida: true,
       numeroJogador 
