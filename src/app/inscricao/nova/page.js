@@ -342,6 +342,37 @@ const validarIdadeParaCategoria = (idade, categoria, numeroJogador = '') => {
       numeroJogador 
     };
   }
+
+  // REGRA ESPECIAL APENAS PARA SUB 17
+  if (categoriaNome === 'SUB 17') {
+    // Para Sub 17 em 2026: apenas nascidos em 2009 ou depois
+    const anoMinimo = 2009;
+    
+    // Obter ano de nascimento do jogador
+    const anoNascimento = new Date(form[`jogador${numeroJogador}_nascimento`]).getFullYear();
+    
+    if (anoNascimento < anoMinimo) {
+      return { 
+        valida: false, 
+        motivo: `não pode participar dessa categoria`,
+        numeroJogador 
+      };
+    }
+    
+    // Além disso, verificar idade máxima (21 anos)
+    if (idade > 17) {
+      return { 
+        valida: false, 
+        motivo: `não pode participar dessa categoria`,
+        numeroJogador 
+      };
+    }
+    
+    return { 
+      valida: true,
+      numeroJogador 
+    };
+  }
   
   if (idade > categoria.idade_max) {
     const categoriaNome = categoria.nome.toUpperCase().includes('SUB') 
