@@ -131,8 +131,8 @@ const statusConfig = {
 // Informações PIX
 const pixInfo = {
   nome: 'Aldeneide Firmino Pereira',
-  chavePix: '5255e28a-0069-41aa-9cca-4b411fbeeb58',
-  banco: 'Will Bank',
+  chavePix: 'c4ed3c93-0e47-4413-84a7-2ef4e167925e',
+  banco: 'Cloudwalk ip Ltda',
 };
 
 export default function StatusInscricaoPage() {
@@ -612,7 +612,7 @@ export default function StatusInscricaoPage() {
                                 {/* Substituindo o ícone pelo QR Code como imagem */}
                                 <Box
                                   component="img"
-                                  src="/qrcode.jpeg" // aqui vai o caminho da sua imagem
+                                  src="/qrcode.png" // aqui vai o caminho da sua imagem
                                   alt="QR Code PIX"
                                   sx={{
                                     width: 200,    // ajuste o tamanho conforme necessário

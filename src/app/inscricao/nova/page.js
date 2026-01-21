@@ -64,8 +64,8 @@ const calcularIdade = (dataNascimento) => {
 
 const pixInfo = {
   nome: 'Aldeneide Firmino Pereira',
-  chavePix: '5255e28a-0069-41aa-9cca-4b411fbeeb58',
-  banco: 'Will Bank',
+  chavePix: 'c4ed3c93-0e47-4413-84a7-2ef4e167925e',
+  banco: 'Cloudwalk ip Ltda',
   valor: 'R$ 150,00'
 };
 
@@ -343,10 +343,10 @@ const validarIdadeParaCategoria = (idade, categoria, numeroJogador = '') => {
     };
   }
 
-  // REGRA ESPECIAL APENAS PARA SUB 17
-  if (categoriaNome === 'SUB 17') {
-    // Para Sub 17 em 2026: apenas nascidos em 2009 ou depois
-    const anoMinimo = 2009;
+  // REGRA ESPECIAL APENAS PARA SUB 18
+  if (categoriaNome === 'SUB 18') {
+    // Para Sub 18 em 2026: apenas nascidos em 2008 ou depois
+    const anoMinimo = 2008;
     
     // Obter ano de nascimento do jogador
     const anoNascimento = new Date(form[`jogador${numeroJogador}_nascimento`]).getFullYear();
@@ -1882,7 +1882,7 @@ const handleFileChange = (e, fileType) => {
                       {/* Substituindo o ícone pelo QR Code como imagem */}
                       <Box
                         component="img"
-                        src="/qrcode.jpeg" // aqui vai o caminho da sua imagem
+                        src="/qrcode.png" // aqui vai o caminho da sua imagem
                         alt="QR Code PIX"
                         sx={{
                           width: 200,    // ajuste o tamanho conforme necessário
